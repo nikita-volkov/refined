@@ -15,11 +15,11 @@ import BasePrelude
 import qualified Language.Haskell.TH.Syntax as TH
 
 
-newtype Restricted (a :: * -> *) b =
-  Restricted b
+newtype Restricted (r :: * -> *) x =
+  Restricted x
   deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
 
-instance TH.Lift b => TH.Lift (Restricted a b) where
+instance TH.Lift x => TH.Lift (Restricted r x) where
   lift (Restricted a) =
     [|Restricted a|]
 
@@ -27,14 +27,14 @@ instance TH.Lift b => TH.Lift (Restricted a b) where
 -- A smart constructor of a Restricted value.
 -- Checks the input value at runtime.
 {-# INLINABLE pack #-}
-pack :: forall a b. Restriction a b => b -> Either String (Restricted a b)
+pack :: forall r x. Restriction r x => x -> Either String (Restricted r x)
 pack =
-  fmap Restricted . runRestriction (undefined :: a b)
+  fmap Restricted . runRestriction (undefined :: r x)
 
 -- |
 -- Extracts the packed value.
 {-# INLINE unpack #-}
-unpack :: Restricted a b -> b
+unpack :: Restricted r x -> x
 unpack =
   unsafeCoerce
 
@@ -53,16 +53,17 @@ unpack =
 --     In the Template Haskell splice $$(packTH 0)
 --     In the expression: $$(packTH 0) :: Restricted Positive Int
 --     In an equation for ‘it’: it = $$(packTH 0) :: Restricted Positive Int
+packTH :: forall r x. (Restriction r x, TH.Lift x) => x -> TH.Q (TH.TExp (Restricted r x))
 packTH =
   fmap TH.TExp . either fail TH.lift . 
-  fmap Restricted . runRestriction (undefined :: a b)
+  fmap Restricted . runRestriction (undefined :: r x)
   
 
 -- * Restriction
 -------------------------
 
-class Restriction a b where
-  runRestriction :: a b -> b -> Either String b
+class Restriction r x where
+  runRestriction :: r x -> x -> Either String x
 
 
 -- |
