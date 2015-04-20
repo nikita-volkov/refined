@@ -70,12 +70,10 @@ class Restriction r x where
 -- A restriction rule, which ensures that the value is greater than zero.
 -- 
 -- Imposes an 'Ord' and a 'Num' constraint on the value.
-data Positive n
+data Positive x
 
-instance (Ord n, Num n) => Restriction Positive n where
+instance (Ord x, Num x) => Restriction Positive x where
   runRestriction _ =
     \case
-      n | n > 0 -> Nothing
+      x | x > 0 -> Nothing
       _ -> Just "Non positive value"
-
-  
