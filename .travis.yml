@@ -1,0 +1,53 @@
+env:
+  - ghc=7.6.1  cabal=1.18 benchmarks=1 tests=1 lower_bound_dependencies=1
+  - ghc=7.6.1  cabal=1.18
+  - ghc=7.8.1  cabal=1.18
+  - ghc=7.10.1 cabal=1.22 benchmarks=1 tests=1
+  
+install:
+  # Set up the Shell to treat the semicolon as &&
+  - set -o pipefail && set -e
+  # Install GHC and Cabal
+  -
+    ghc=${ghc=7.10.1}; 
+    cabal=${cabal=1.22};
+    travis_retry sudo add-apt-repository -y ppa:hvr/ghc;
+    travis_retry sudo apt-get update;
+    travis_retry sudo apt-get install cabal-install-$cabal ghc-$ghc;
+    export PATH=/opt/ghc/$ghc/bin:/opt/cabal/$cabal/bin:$PATH;
+  # Update the Cabal database
+  - cabal update
+  # Switch to the distro:
+  - 
+    export pkg_name=$(cabal info . | awk '{print $2;exit}');
+    cabal sdist;
+    cd dist;
+    tar xzvf $pkg_name.tar.gz;
+    cd $pkg_name;
+  # Install the lower bound dependencies
+  - 
+    if [ "$lower_bound_dependencies" = "1" ];
+    then
+      constraint_options=(
+      );
+    fi;
+  # Install the library dependencies
+  - cabal install --only-dependencies --reorder-goals --force-reinstalls
+      ${constraint_options[@]}
+      $([ "$tests" = "1" ] && echo "--enable-tests")
+      $([ "$benchmarks" = "1" ] && echo "--enable-benchmarks")
+  # Build the library
+  - cabal build
+  # Configure and build the remaining stuff
+  - cabal configure 
+      $([ "$tests" = "1" ] && echo "--enable-tests")
+      $([ "$benchmarks" = "1" ] && echo "--enable-benchmarks")
+      -f doctest
+  - cabal build
+
+script:
+  - |
+    if [ "$tests" = "1" ];
+    then
+      cabal test --show-details=always;
+    fi;
