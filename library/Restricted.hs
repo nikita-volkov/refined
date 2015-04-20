@@ -1,4 +1,4 @@
-module RestrictedTypes
+module Restricted
 (
   Restricted,
   pack,

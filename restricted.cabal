@@ -1,5 +1,5 @@
 name:
-  restricted-types
+  restricted
 version:
   0.1.0.0
 synopsis:
@@ -7,9 +7,9 @@ description:
 category:
   Data
 homepage:
-  https://github.com/nikita-volkov/restricted-types
+  https://github.com/nikita-volkov/restricted
 bug-reports:
-  https://github.com/nikita-volkov/restricted-types/issues 
+  https://github.com/nikita-volkov/restricted/issues 
 author:
   Nikita Volkov <nikita.y.volkov@mail.ru>
 maintainer:
@@ -30,7 +30,7 @@ source-repository head
   type:
     git
   location:
-    git://github.com/nikita-volkov/restricted-types.git
+    git://github.com/nikita-volkov/restricted.git
 
 
 library
@@ -38,7 +38,7 @@ library
     library
   other-modules:
   exposed-modules:
-    RestrictedTypes
+    Restricted
   ghc-options:
     -funbox-strict-fields
   default-extensions:
