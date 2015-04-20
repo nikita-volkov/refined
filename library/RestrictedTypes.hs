@@ -21,7 +21,7 @@ import BasePrelude
 import qualified Language.Haskell.TH.Syntax as TH
 
 
-newtype Restricted (r :: * -> *) x =
+newtype Restricted r x =
   Restricted x
   deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
 
@@ -36,7 +36,7 @@ instance TH.Lift x => TH.Lift (Restricted r x) where
 pack :: forall r x. Restriction r x => x -> Either String (Restricted r x)
 pack x =
   maybe (Right (Restricted x)) Left $
-  runRestriction (undefined :: r x) x
+  runRestriction (undefined :: r) x
 
 -- |
 -- Extracts the packed value.
@@ -69,31 +69,31 @@ packTH =
 -------------------------
 
 class Restriction r x where
-  runRestriction :: r x -> x -> Maybe String
+  runRestriction :: r -> x -> Maybe String
 
 
-data Not (r :: * -> *) :: * -> *
+data Not r
 
 instance Restriction r x => Restriction (Not r) x where
   runRestriction _ =
     maybe (Just "A subrestriction didn't fail") (const Nothing) .
-    runRestriction (undefined :: r x)
+    runRestriction (undefined :: r)
 
-data And (l :: * -> *) (r :: * -> *) :: * -> *
+data And l r
 
 instance (Restriction l x, Restriction r x) => Restriction (And l r) x where
   runRestriction _ x =
     fmap (showString "The left subrestriction failed with: ") 
-         (runRestriction (undefined :: l x) x) 
+         (runRestriction (undefined :: l) x) 
       <|>
     fmap (showString "The right subrestriction failed with: ") 
-         (runRestriction (undefined :: r x) x)
+         (runRestriction (undefined :: r) x)
 
 -- |
 -- A restriction rule, which ensures that the value is greater than zero.
 -- 
 -- Imposes an 'Ord' and a 'Num' constraint on the value.
-data Positive :: * -> *
+data Positive
 
 instance (Ord x, Num x) => Restriction Positive x where
   runRestriction _ =
@@ -101,7 +101,7 @@ instance (Ord x, Num x) => Restriction Positive x where
       x | x > 0 -> Nothing
       _ -> Just "A non-positive value"
 
-data NonZero :: * -> *
+data NonZero
 
 instance (Num x, Eq x) => Restriction NonZero x where
   runRestriction _ =
