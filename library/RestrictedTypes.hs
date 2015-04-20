@@ -72,14 +72,14 @@ class Restriction r x where
   runRestriction :: r x -> x -> Maybe String
 
 
-data Not (r :: * -> *) x
+data Not (r :: * -> *) :: * -> *
 
 instance Restriction r x => Restriction (Not r) x where
   runRestriction _ =
     maybe (Just "A subrestriction didn't fail") (const Nothing) .
     runRestriction (undefined :: r x)
 
-data And (l :: * -> *) (r :: * -> *) x
+data And (l :: * -> *) (r :: * -> *) :: * -> *
 
 instance (Restriction l x, Restriction r x) => Restriction (And l r) x where
   runRestriction _ x =
@@ -93,7 +93,7 @@ instance (Restriction l x, Restriction r x) => Restriction (And l r) x where
 -- A restriction rule, which ensures that the value is greater than zero.
 -- 
 -- Imposes an 'Ord' and a 'Num' constraint on the value.
-data Positive x
+data Positive :: * -> *
 
 instance (Ord x, Num x) => Restriction Positive x where
   runRestriction _ =
@@ -101,7 +101,7 @@ instance (Ord x, Num x) => Restriction Positive x where
       x | x > 0 -> Nothing
       _ -> Just "A non-positive value"
 
-data NonZero x
+data NonZero :: * -> *
 
 instance (Num x, Eq x) => Restriction NonZero x where
   runRestriction _ =
