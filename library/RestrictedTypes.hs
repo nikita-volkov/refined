@@ -28,8 +28,9 @@ instance TH.Lift x => TH.Lift (Restricted r x) where
 -- Checks the input value at runtime.
 {-# INLINABLE pack #-}
 pack :: forall r x. Restriction r x => x -> Either String (Restricted r x)
-pack =
-  fmap Restricted . runRestriction (undefined :: r x)
+pack x =
+  maybe (Right (Restricted x)) Left $
+  runRestriction (undefined :: r x) x
 
 -- |
 -- Extracts the packed value.
@@ -55,15 +56,14 @@ unpack =
 --     In an equation for ‘it’: it = $$(packTH 0) :: Restricted Positive Int
 packTH :: forall r x. (Restriction r x, TH.Lift x) => x -> TH.Q (TH.TExp (Restricted r x))
 packTH =
-  fmap TH.TExp . either fail TH.lift . 
-  fmap Restricted . runRestriction (undefined :: r x)
+  fmap TH.TExp . either fail TH.lift . (pack :: x -> Either String (Restricted r x))
   
 
 -- * Restriction
 -------------------------
 
 class Restriction r x where
-  runRestriction :: r x -> x -> Either String x
+  runRestriction :: r x -> x -> Maybe String
 
 
 -- |
@@ -75,7 +75,7 @@ data Positive n
 instance (Ord n, Num n) => Restriction Positive n where
   runRestriction _ =
     \case
-      n | n > 0 -> Right n
-      _ -> Left "Non positive value"
+      n | n > 0 -> Nothing
+      _ -> Just "Non positive value"
 
   
