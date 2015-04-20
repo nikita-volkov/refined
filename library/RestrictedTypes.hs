@@ -7,7 +7,13 @@ module RestrictedTypes
   -- * Restriction
   Restriction(..),
   -- * Standard Restrictions
+  Not,
+  And,
   Positive,
+  NonZero,
+  Negative,
+  NonPositive,
+  NonNegative,
 )
 where
 
@@ -66,6 +72,23 @@ class Restriction r x where
   runRestriction :: r x -> x -> Maybe String
 
 
+data Not (r :: * -> *) x
+
+instance Restriction r x => Restriction (Not r) x where
+  runRestriction _ =
+    maybe (Just "A subrestriction didn't fail") (const Nothing) .
+    runRestriction (undefined :: r x)
+
+data And (l :: * -> *) (r :: * -> *) x
+
+instance (Restriction l x, Restriction r x) => Restriction (And l r) x where
+  runRestriction _ x =
+    fmap (showString "The left subrestriction failed with: ") 
+         (runRestriction (undefined :: l x) x) 
+      <|>
+    fmap (showString "The right subrestriction failed with: ") 
+         (runRestriction (undefined :: r x) x)
+
 -- |
 -- A restriction rule, which ensures that the value is greater than zero.
 -- 
@@ -76,4 +99,22 @@ instance (Ord x, Num x) => Restriction Positive x where
   runRestriction _ =
     \case
       x | x > 0 -> Nothing
-      _ -> Just "Non positive value"
+      _ -> Just "A non-positive value"
+
+data NonZero x
+
+instance (Num x, Eq x) => Restriction NonZero x where
+  runRestriction _ =
+    \case
+      0 -> Just "A zero value"
+      _ -> Nothing
+
+type Negative = 
+  And (Not Positive) NonZero
+
+type NonPositive = 
+  Not Positive
+
+type NonNegative =
+  Not Negative
+
