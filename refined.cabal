@@ -1,5 +1,5 @@
 name:
-  restricted
+  refined
 version:
   0.1.0.0
 synopsis:
@@ -7,9 +7,9 @@ description:
 category:
   Data
 homepage:
-  https://github.com/nikita-volkov/restricted
+  https://github.com/nikita-volkov/refined
 bug-reports:
-  https://github.com/nikita-volkov/restricted/issues 
+  https://github.com/nikita-volkov/refined/issues 
 author:
   Nikita Volkov <nikita.y.volkov@mail.ru>
 maintainer:
@@ -30,7 +30,7 @@ source-repository head
   type:
     git
   location:
-    git://github.com/nikita-volkov/restricted.git
+    git://github.com/nikita-volkov/refined.git
 
 
 library
@@ -38,7 +38,7 @@ library
     library
   other-modules:
   exposed-modules:
-    Restricted
+    Refined
   ghc-options:
     -funbox-strict-fields
   default-extensions:
