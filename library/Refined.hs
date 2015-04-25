@@ -12,13 +12,17 @@ module Refined
   And,
   Or,
   -- ** Numeric
-  Zero,
+  LessThan,
+  GreaterThan,
+  EqualTo,
   Positive,
   Negative,
+  ZeroToOne,
 )
 where
 
 import BasePrelude
+import GHC.TypeLits
 import qualified Language.Haskell.TH.Syntax as TH
 
 
@@ -132,29 +136,53 @@ instance (Predicate l x, Predicate r x) => Predicate (Or l r) x where
 -------------------------
 
 -- |
--- A predicate, which ensures that the value is equal to zero.
--- By itself it's probably not very useful,
--- however it allows to define complex predicates using logical combinators.
--- E.g., see the definition of 'Negative'.
-data Zero
+-- A predicate, which ensures that a value is less than the specified type-level number.
+data LessThan (n :: Nat)
 
-instance (Num x, Eq x) => Predicate Zero x where
-  validate _ =
-    \case
-      0 -> Nothing
-      _ -> Just "A non-zero value"
+instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
+  validate p x =
+    if x < fromIntegral x'
+      then Nothing
+      else Just ("Value is not less than " <> show x')
+    where
+      x' = natVal p
+
+-- |
+-- A predicate, which ensures that a value is greater than the specified type-level number.
+data GreaterThan (n :: Nat)
+
+instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
+  validate p x =
+    if x > fromIntegral x'
+      then Nothing
+      else Just ("Value is not greater than " <> show x')
+    where
+      x' = natVal p
+
+-- |
+-- A predicate, which ensures that a value equals to the specified type-level number.
+data EqualTo (n :: Nat)
+
+instance (Ord x, Num x, KnownNat n) => Predicate (EqualTo n) x where
+  validate p x =
+    if x == fromIntegral x'
+      then Nothing
+      else Just ("Value does not equal " <> show x')
+    where
+      x' = natVal p
 
 -- |
 -- A predicate, which ensures that the value is greater than zero.
-data Positive
-
-instance (Ord x, Num x) => Predicate Positive x where
-  validate _ =
-    \case
-      x | x > 0 -> Nothing
-      _ -> Just "A non-positive value"
+type Positive =
+  GreaterThan 0
 
 -- |
 -- A predicate, which ensures that the value is less than zero.
 type Negative = 
-  And (Not Positive) (Not Zero)
+  LessThan 0
+
+-- |
+-- A range of values from zero to one, including both.
+type ZeroToOne =
+  And (Not (LessThan 0)) (Not (GreaterThan 1))
+
