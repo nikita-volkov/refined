@@ -3,7 +3,7 @@ name:
 version:
   0.1.0.0
 synopsis:
-  Refined types with static and runtime checking
+  Refinement types with static and runtime checking
 category:
   Data
 homepage:
