@@ -4,19 +4,17 @@ module Refined
   refine,
   refineTH,
   unrefine,
-  -- * Refinement
-  Refinement(..),
-  -- * Standard Refinement Rules
+  -- * Predicate Interface
+  Predicate(..),
+  -- * Standard Predicates
   -- ** Logical
   Not,
   And,
   Or,
   -- ** Numeric
-  NonZero,
+  Zero,
   Positive,
   Negative,
-  NonNegative,
-  NonPositive,
 )
 where
 
@@ -25,12 +23,14 @@ import qualified Language.Haskell.TH.Syntax as TH
 
 
 -- |
--- A value of type @x@ refined according to a rule @r@.
-newtype Refined r x =
+-- A refinement type, 
+-- which wraps a value of type @x@,
+-- ensuring that it satisfies a type-level predicate @p@.
+newtype Refined p x =
   Refined x
   deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
 
-instance TH.Lift x => TH.Lift (Refined r x) where
+instance TH.Lift x => TH.Lift (Refined p x) where
   lift (Refined a) =
     [|Refined a|]
 
@@ -38,13 +38,13 @@ instance TH.Lift x => TH.Lift (Refined r x) where
 -- A smart constructor of a Refined value.
 -- Checks the input value at runtime.
 {-# INLINABLE refine #-}
-refine :: forall r x. Refinement r x => x -> Either String (Refined r x)
+refine :: forall p x. Predicate p x => x -> Either String (Refined p x)
 refine x =
   maybe (Right (Refined x)) Left $
-  validate (undefined :: r) x
+  validate (undefined :: p) x
 
 -- |
--- Constructs a Refined value with checking at compile-time using Template Haskell.
+-- Constructs a 'Refined' value with checking at compile-time using Template Haskell.
 -- E.g.,
 -- 
 -- >>> $$(refineTH 23) :: Refined Positive Int
@@ -58,28 +58,33 @@ refine x =
 --     In the Template Haskell splice $$(refineTH 0)
 --     In the expression: $$(refineTH 0) :: Refined Positive Int
 --     In an equation for ‘it’: it = $$(refineTH 0) :: Refined Positive Int
-refineTH :: forall r x. (Refinement r x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined r x))
+-- 
+-- If it's not evident, the above is a compile-time failure, 
+-- which means that the checking was done at compile-time, 
+-- thus introducing a zero runtime overhead compared to a plain value construction.
+refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
 refineTH =
-  fmap TH.TExp . either fail TH.lift . (refine :: x -> Either String (Refined r x))
+  fmap TH.TExp . either fail TH.lift . (refine :: x -> Either String (Refined p x))
 
 -- |
 -- Extracts the refined value.
 {-# INLINE unrefine #-}
-unrefine :: Refined r x -> x
+unrefine :: Refined p x -> x
 unrefine =
   unsafeCoerce
   
 
--- * Refinement
+-- * Predicate
 -------------------------
 
 -- |
--- A refinement of type @x@ according to rule @r@.
-class Refinement r x where
+-- A class which defines a runtime interpretation of
+-- a type-level predicate @p@ for type @x@.
+class Predicate p x where
   -- |
-  -- Check the value @x@ according to the refinement rule @r@,
+  -- Check the value @x@ according to the predicate @p@,
   -- producing an error string if the value does not satisfy.
-  validate :: r -> x -> Maybe String
+  validate :: p -> x -> Maybe String
 
 
 -- * Rules
@@ -90,35 +95,35 @@ class Refinement r x where
 -------------------------
 
 -- |
--- A logical negation of a refinement rule.
+-- A logical negation of a predicate.
 data Not r
 
-instance Refinement r x => Refinement (Not r) x where
+instance Predicate r x => Predicate (Not r) x where
   validate _ =
-    maybe (Just "A subrule didn't fail") (const Nothing) .
+    maybe (Just "A subpredicate didn't fail") (const Nothing) .
     validate (undefined :: r)
 
 -- |
--- A logical conjunction refinement rule, composed of two other rules.
+-- A logical conjunction predicate, composed of two other predicates.
 data And l r
 
-instance (Refinement l x, Refinement r x) => Refinement (And l r) x where
+instance (Predicate l x, Predicate r x) => Predicate (And l r) x where
   validate _ x =
-    fmap (showString "The left subrule failed with: ") 
+    fmap (showString "The left subpredicate failed with: ") 
          (validate (undefined :: l) x) 
       <|>
-    fmap (showString "The right subrule failed with: ") 
+    fmap (showString "The right subpredicate failed with: ") 
          (validate (undefined :: r) x)
 
 -- |
--- A logical disjunction refinement rule, composed of two other rules.
+-- A logical disjunction predicate, composed of two other predicates.
 data Or l r
 
-instance (Refinement l x, Refinement r x) => Refinement (Or l r) x where
+instance (Predicate l x, Predicate r x) => Predicate (Or l r) x where
   validate _ x =
     case (validate (undefined :: l) x, validate (undefined :: r) x) of
       (Just a, Just b) -> 
-        Just $ "Both subrules failed. First with: " <> a <> ". Second with: " <> b <> "."
+        Just $ "Both subpredicates failed. First with: " <> a <> ". Second with: " <> b <> "."
       _ -> 
         Nothing
 
@@ -127,37 +132,29 @@ instance (Refinement l x, Refinement r x) => Refinement (Or l r) x where
 -------------------------
 
 -- |
--- A refinement rule, which ensures that the value does not equal to zero.
-data NonZero
+-- A predicate, which ensures that the value is equal to zero.
+-- By itself it's probably not very useful,
+-- however it allows to define complex predicates using logical combinators.
+-- E.g., see the definition of 'Negative'.
+data Zero
 
-instance (Num x, Eq x) => Refinement NonZero x where
+instance (Num x, Eq x) => Predicate Zero x where
   validate _ =
     \case
-      0 -> Just "A zero value"
-      _ -> Nothing
+      0 -> Nothing
+      _ -> Just "A non-zero value"
 
 -- |
--- A refinement rule, which ensures that the value is greater than zero.
+-- A predicate, which ensures that the value is greater than zero.
 data Positive
 
-instance (Ord x, Num x) => Refinement Positive x where
+instance (Ord x, Num x) => Predicate Positive x where
   validate _ =
     \case
       x | x > 0 -> Nothing
       _ -> Just "A non-positive value"
 
 -- |
--- A refinement rule, which ensures that the value is less than zero.
+-- A predicate, which ensures that the value is less than zero.
 type Negative = 
-  And (Not Positive) NonZero
-
--- |
--- A refinement rule, which ensures that the value is greater than or equal to zero.
-type NonNegative =
-  Not Negative
-
--- |
--- A refinement rule, which ensures that the value is less than or equal to zero.
-type NonPositive = 
-  Not Positive
-
+  And (Not Positive) (Not Zero)
