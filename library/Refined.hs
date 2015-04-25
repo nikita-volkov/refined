@@ -39,7 +39,7 @@ instance TH.Lift x => TH.Lift (Refined p x) where
     [|Refined a|]
 
 -- |
--- A smart constructor of a Refined value.
+-- A smart constructor of a 'Refined' value.
 -- Checks the input value at runtime.
 {-# INLINABLE refine #-}
 refine :: forall p x. Predicate p x => x -> Either String (Refined p x)
@@ -57,13 +57,14 @@ refine x =
 -- Here's an example of an ivalid value:
 -- 
 -- >>> $$(refineTH 0) :: Refined Positive Int
--- <interactive>:18:4:
---     Non positive value
+-- <interactive>:6:4:
+--     Value is not greater than 0
 --     In the Template Haskell splice $$(refineTH 0)
 --     In the expression: $$(refineTH 0) :: Refined Positive Int
---     In an equation for ‘it’: it = $$(refineTH 0) :: Refined Positive Int
+--     In an equation for ‘it’:
+--         it = $$(refineTH 0) :: Refined Positive Int
 -- 
--- If it's not evident, the above is a compile-time failure, 
+-- If it's not evident, the example above indicates a compile-time failure, 
 -- which means that the checking was done at compile-time, 
 -- thus introducing a zero runtime overhead compared to a plain value construction.
 refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
