@@ -4,6 +4,9 @@ version:
   0.1.0.0
 synopsis:
   Refinement types with static and runtime checking
+description:
+  For an extensive introduction to the library please follow to 
+  <http://nikita-volkov.github.io/refined this blog-post>.
 category:
   Data
 homepage:
