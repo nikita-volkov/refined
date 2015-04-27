@@ -51,4 +51,4 @@ library
   build-depends:
     template-haskell >= 2.9 && < 3,
     base-prelude >= 0.1.19 && < 0.2,
-    base >= 4.7
+    base >= 4.7 && < 5
