@@ -54,7 +54,7 @@ refine x =
 -- >>> $$(refineTH 23) :: Refined Positive Int
 -- Refined 23
 -- 
--- Here's an example of an ivalid value:
+-- Here's an example of an invalid value:
 -- 
 -- >>> $$(refineTH 0) :: Refined Positive Int
 -- <interactive>:6:4:
