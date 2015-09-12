@@ -32,7 +32,16 @@ import qualified Language.Haskell.TH.Syntax as TH
 -- ensuring that it satisfies a type-level predicate @p@.
 newtype Refined p x =
   Refined x
-  deriving (Show, Read, Eq, Ord, Typeable, Data, Generic)
+  deriving (Show, Eq, Ord, Typeable, Data, Generic)
+
+instance (Read x, Predicate p x) => Read (Refined p x) where
+  readsPrec d =
+    readParen (d > 10) $ \r1 -> do
+      ("Refined", r2) <- lex r1
+      (raw,       r3) <- readsPrec 11 r2
+      case refine raw of
+        Right val -> [(val, r3)]
+        Left  _   -> []
 
 instance TH.Lift x => TH.Lift (Refined p x) where
   lift (Refined a) =
