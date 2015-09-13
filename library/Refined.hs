@@ -15,8 +15,13 @@ module Refined
   LessThan,
   GreaterThan,
   EqualTo,
+  From,
+  To,
+  FromTo,
   Positive,
   Negative,
+  NonPositive,
+  NonNegative,
   ZeroToOne,
 )
 where
@@ -201,10 +206,25 @@ data EqualTo (n :: Nat)
 instance (Ord x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x =
     if x == fromIntegral x'
-      then (True, "Value is equal to " <> show x')
+      then (True, "Value equals " <> show x')
       else (False, "Value does not equal " <> show x')
     where
       x' = natVal p
+
+-- |
+-- A predicate, which ensures that the value is greater than or equal to the specified type-level number.
+type From n =
+  Not (LessThan n)
+
+-- |
+-- A predicate, which ensures that the value is less than or equal to the specified type-level number.
+type To n =
+  Not (GreaterThan n)
+
+-- |
+-- A predicate, which ensures that the value is inbetween or equal to either of the specified type-level numbers.
+type FromTo mn mx =
+  And (From mn) (To mx)
 
 -- |
 -- A predicate, which ensures that the value is greater than zero.
@@ -217,7 +237,17 @@ type Negative =
   LessThan 0
 
 -- |
+-- A predicate, which ensures that the value is less than or equal to zero.
+type NonPositive =
+  Not Positive
+
+-- |
+-- A predicate, which ensures that the value is greater than or equal to zero.
+type NonNegative =
+  Not Negative
+
+-- |
 -- A range of values from zero to one, including both.
 type ZeroToOne =
-  And (Not (LessThan 0)) (Not (GreaterThan 1))
+  FromTo 0 1
 
