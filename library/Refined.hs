@@ -116,12 +116,6 @@ class Predicate p x where
 -- ** Logical
 -------------------------
 
-ensureSentenceEnd :: String -> String
-ensureSentenceEnd str =
-  if not (null str) && not (elem (last str) ['.', '?', '!'])
-    then str ++ "."
-    else str
-
 -- |
 -- A logical negation of a predicate.
 data Not r
@@ -166,10 +160,16 @@ instance (Predicate l x, Predicate r x) => Predicate (Or l r) x where
               "Both subpredicates failed" ++
                 if not (null lMsg && null rMsg)
                   then " (" ++ (intercalate " | " $ filter (not . null) [
-                                if null lMsg then "" else "First with: " ++ lMsg,
-                                if null rMsg then "" else "Second with: " ++ rMsg ]) ++ ")"
+                                  if null lMsg then "" else "First with: " ++ lMsg,
+                                  if null rMsg then "" else "Second with: " ++ rMsg ]) ++ ")"
                   else "."
     in (passed, msg)
+
+ensureSentenceEnd :: String -> String
+ensureSentenceEnd str =
+  if not (null str) && not (elem (last str) ['.', '?', '!'])
+    then str ++ "."
+    else str
 
 
 -- ** Numeric
