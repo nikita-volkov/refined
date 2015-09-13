@@ -32,7 +32,7 @@ import qualified Language.Haskell.TH.Syntax as TH
 
 
 -- |
--- A refinement type, 
+-- A refinement type,
 -- which wraps a value of type @x@,
 -- ensuring that it satisfies a type-level predicate @p@.
 newtype Refined p x =
@@ -65,12 +65,12 @@ refine x =
 -- |
 -- Constructs a 'Refined' value with checking at compile-time using Template Haskell.
 -- E.g.,
--- 
+--
 -- >>> $$(refineTH 23) :: Refined Positive Int
 -- Refined 23
--- 
+--
 -- Here's an example of an invalid value:
--- 
+--
 -- >>> $$(refineTH 0) :: Refined Positive Int
 -- <interactive>:6:4:
 --     Value is not greater than 0
@@ -78,9 +78,9 @@ refine x =
 --     In the expression: $$(refineTH 0) :: Refined Positive Int
 --     In an equation for ‘it’:
 --         it = $$(refineTH 0) :: Refined Positive Int
--- 
--- If it's not evident, the example above indicates a compile-time failure, 
--- which means that the checking was done at compile-time, 
+--
+-- If it's not evident, the example above indicates a compile-time failure,
+-- which means that the checking was done at compile-time,
 -- thus introducing a zero runtime overhead compared to a plain value construction.
 refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
 refineTH =
@@ -92,7 +92,7 @@ refineTH =
 unrefine :: Refined p x -> x
 unrefine =
   unsafeCoerce
-  
+
 
 -- * Predicate
 -------------------------
@@ -233,7 +233,7 @@ type Positive =
 
 -- |
 -- A predicate, which ensures that the value is less than zero.
-type Negative = 
+type Negative =
   LessThan 0
 
 -- |
