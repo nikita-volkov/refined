@@ -14,9 +14,14 @@ module Refined
   -- ** Numeric
   LessThan,
   GreaterThan,
+  From,
+  To,
+  FromTo,
   EqualTo,
   Positive,
+  NonPositive,
   Negative,
+  NonNegative,
   ZeroToOne,
 )
 where
@@ -170,6 +175,43 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
       x' = natVal p
 
 -- |
+-- A predicate, which ensures that a value is greater than or equal to the specified type-level number.
+data From (n :: Nat)
+
+instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
+  validate p x =
+    if x >= fromIntegral x'
+      then Nothing
+      else Just ("Value is less than " <> show x')
+    where
+      x' = natVal p
+
+-- |
+-- A predicate, which ensures that a value is less than or equal to the specified type-level number.
+data To (n :: Nat)
+
+instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
+  validate p x =
+    if x <= fromIntegral x'
+      then Nothing
+      else Just ("Value is greater than " <> show x')
+    where
+      x' = natVal p
+
+-- |
+-- A predicate, which ensures that a value is between or equal to either of the specified type-level numbers.
+data FromTo (mn :: Nat) (mx :: Nat)
+
+instance (Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx) => Predicate (FromTo mn mx) x where
+  validate p x =
+    if x >= fromIntegral mn' && x <= fromIntegral mx'
+      then Nothing
+      else Just ("Value is out of range (minimum: " <> show mn' <> ", maximum: " <> show mx' <> ")")
+    where
+      mn' = natVal (Proxy :: Proxy mn)
+      mx' = natVal (Proxy :: Proxy mx)
+
+-- |
 -- A predicate, which ensures that a value equals to the specified type-level number.
 data EqualTo (n :: Nat)
 
@@ -187,12 +229,21 @@ type Positive =
   GreaterThan 0
 
 -- |
+-- A predicate, which ensures that the value is less than or equal to zero.
+type NonPositive =
+  To 0
+
+-- |
 -- A predicate, which ensures that the value is less than zero.
 type Negative = 
   LessThan 0
 
 -- |
+-- A predicate, which ensures that the value is greater than or equal to zero.
+type NonNegative =
+  From 0
+
+-- |
 -- A range of values from zero to one, including both.
 type ZeroToOne =
-  And (Not (LessThan 0)) (Not (GreaterThan 1))
-
+  FromTo 0 1
