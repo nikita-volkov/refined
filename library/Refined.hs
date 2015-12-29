@@ -56,10 +56,16 @@ instance TH.Lift x => TH.Lift (Refined p x) where
 -- A smart constructor of a 'Refined' value.
 -- Checks the input value at runtime.
 {-# INLINABLE refine #-}
-refine :: forall p x. Predicate p x => x -> Either String (Refined p x)
+refine :: Predicate p x => x -> Either String (Refined p x)
 refine x =
-  maybe (Right (Refined x)) Left $
-  validate (undefined :: p) x
+  fix $ \result ->
+    maybe (Right (Refined x)) Left $
+    validate (predicateByResult result) x
+  where
+    -- A work-around for the type-inference.
+    predicateByResult :: Either String (Refined p x) -> p
+    predicateByResult =
+      const undefined
 
 -- |
 -- Constructs a 'Refined' value with checking at compile-time using Template Haskell.
@@ -81,9 +87,15 @@ refine x =
 -- If it's not evident, the example above indicates a compile-time failure, 
 -- which means that the checking was done at compile-time, 
 -- thus introducing a zero runtime overhead compared to a plain value construction.
-refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
+refineTH :: (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
 refineTH =
-  fmap TH.TExp . either fail TH.lift . (refine :: x -> Either String (Refined p x))
+  fix $ \loop ->
+    fmap TH.TExp . either fail TH.lift . refineByResult (loop undefined)
+  where
+    -- A work-around for the type-inference.
+    refineByResult :: Predicate p x => TH.Q (TH.TExp (Refined p x)) -> x -> Either String (Refined p x)
+    refineByResult =
+      const refine
 
 -- |
 -- Extracts the refined value.
