@@ -1,7 +1,7 @@
 name:
   refined
 version:
-  0.1.1.0
+  0.1.2
 synopsis:
   Refinement types with static and runtime checking
 description:
@@ -50,5 +50,5 @@ library
     Haskell2010
   build-depends:
     template-haskell >= 2.9 && < 3,
-    base-prelude >= 0.1.19 && < 0.2,
+    base-prelude >= 0.1.19 && < 2,
     base >= 4.7 && < 5
