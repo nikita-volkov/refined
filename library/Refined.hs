@@ -25,10 +25,13 @@ module Refined
   Negative,
   NonNegative,
   ZeroToOne,
+  -- * Weakening
+  Weaken(..)
 )
 where
 
 import BasePrelude
+import Data.Coerce
 import GHC.TypeLits
 import qualified Language.Haskell.TH.Syntax as TH
 
@@ -104,7 +107,7 @@ refineTH =
 {-# INLINE unrefine #-}
 unrefine :: Refined p x -> x
 unrefine =
-  unsafeCoerce
+  coerce
   
 
 -- * Predicate
@@ -149,10 +152,10 @@ instance (Predicate l x, Predicate r x) => Predicate (And l r) x where
          (validate (undefined :: r) x)
 
 andLeft :: Refined (And l r) x -> Refined l x
-andLeft = unsafeCoerce
+andLeft = coerce
 
 andRight :: Refined (And l r) x -> Refined r x
-andRight = unsafeCoerce
+andRight = coerce
 
 -- |
 -- A logical disjunction predicate, composed of two other predicates.
@@ -167,10 +170,10 @@ instance (Predicate l x, Predicate r x) => Predicate (Or l r) x where
         Nothing
 
 leftOr :: Refined l x -> Refined (Or l r) x
-leftOr = unsafeCoerce
+leftOr = coerce
 
 rightOr :: Refined r x -> Refined (Or l r) x
-rightOr = unsafeCoerce
+rightOr = coerce
 
 -- ** Numeric
 -------------------------
@@ -272,3 +275,35 @@ type NonNegative =
 -- A range of values from zero to one, including both.
 type ZeroToOne =
   FromTo 0 1
+
+-- * Weakening
+-------------------------
+
+-- |
+-- A typeclass containing "safe" conversions between refined predicates
+-- where the target is /weaker/ than the source: that is, all values that
+-- satisfy the first predicate will be guarunteed to satisy the second.
+--
+-- Take care: writing an instance declaration for your custom predicates is
+-- the same as an assertion that 'weaken' is safe to use:
+--
+-- @
+-- instance 'Weaken' Pred1 Pred2
+-- @
+--
+-- For most of the instances, explicit type annotations for the result
+-- value's type might be required.
+class Weaken from to where
+    weaken :: Refined from x -> Refined to x
+    weaken = coerce
+
+instance (n <= m) => Weaken (LessThan n) (LessThan m)
+instance (n <= m) => Weaken (LessThan n) (To m)
+instance (n <= m) => Weaken (To n) (To m)
+instance (m <= n) => Weaken (GreaterThan n) (GreaterThan m)
+instance (m <= n) => Weaken (GreaterThan n) (From m)
+instance (m <= n) => Weaken (From n) (From m)
+instance (p <= n, m <= q) => Weaken (FromTo n m) (FromTo p q)
+instance (p <= n) => Weaken (FromTo n m) (From p)
+instance (m <= q) => Weaken (FromTo n m) (To q)
+
