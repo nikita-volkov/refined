@@ -11,6 +11,8 @@ module Refined
   Not,
   And,
   Or,
+  andLeft, andRight,
+  leftOr, rightOr,
   -- ** Numeric
   LessThan,
   GreaterThan,
@@ -146,6 +148,12 @@ instance (Predicate l x, Predicate r x) => Predicate (And l r) x where
     fmap (showString "The right subpredicate failed with: ") 
          (validate (undefined :: r) x)
 
+andLeft :: Refined (And l r) x -> Refined l x
+andLeft = unsafeCoerce
+
+andRight :: Refined (And l r) x -> Refined r x
+andRight = unsafeCoerce
+
 -- |
 -- A logical disjunction predicate, composed of two other predicates.
 data Or l r
@@ -158,6 +166,11 @@ instance (Predicate l x, Predicate r x) => Predicate (Or l r) x where
       _ -> 
         Nothing
 
+leftOr :: Refined l x -> Refined (Or l r) x
+leftOr = unsafeCoerce
+
+rightOr :: Refined r x -> Refined (Or l r) x
+rightOr = unsafeCoerce
 
 -- ** Numeric
 -------------------------
