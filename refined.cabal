@@ -19,6 +19,8 @@ maintainer:
   Nikita Volkov <nikita.y.volkov@mail.ru>
 copyright:
   (c) 2015, Nikita Volkov
+  (c) 2018, Remy Goldschmidt
+  (c) 2018, Daniel Cartwright
 license:
   MIT
 license-file:
@@ -28,27 +30,41 @@ build-type:
 cabal-version:
   >=1.10
 
-
 source-repository head
   type:
     git
   location:
     git://github.com/nikita-volkov/refined.git
 
-
 library
   hs-source-dirs:
     library
-  other-modules:
   exposed-modules:
     Refined
+  other-modules:
+    Refined.Orphan
+    Refined.PrettyPrinter 
   ghc-options:
     -funbox-strict-fields
-  default-extensions:
-    Arrows, BangPatterns, ConstraintKinds, DataKinds, DefaultSignatures, DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, EmptyDataDecls, FlexibleContexts, FlexibleInstances, FunctionalDependencies, GADTs, GeneralizedNewtypeDeriving, LambdaCase, LiberalTypeSynonyms, MultiParamTypeClasses, MultiWayIf, NoImplicitPrelude, NoMonomorphismRestriction, OverloadedStrings, PatternGuards, ParallelListComp, QuasiQuotes, RankNTypes, RecordWildCards, ScopedTypeVariables, StandaloneDeriving, TemplateHaskell, TupleSections, TypeFamilies, TypeOperators
   default-language:
     Haskell2010
   build-depends:
-    template-haskell >= 2.9 && < 3,
-    base-prelude >= 0.1.19 && < 2,
-    base >= 4.7 && < 5
+      base >= 4.7 && < 5
+    , containers
+    , exceptions 
+    , mtl 
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , template-haskell >= 2.9 && < 3
+    , text 
+    , transformers
+
+test-suite test
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is: Main.hs
+  build-depends:
+      base
+    , containers
+    , refined
+  default-language:    Haskell2010
