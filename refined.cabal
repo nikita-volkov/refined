@@ -61,10 +61,11 @@ library
 
 test-suite test
   type: exitcode-stdio-1.0
-  hs-source-dirs: tests
+  hs-source-dirs: test
   main-is: Main.hs
   build-depends:
       base
+    , bytestring 
     , containers
     , refined
   default-language:    Haskell2010

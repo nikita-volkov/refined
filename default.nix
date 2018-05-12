@@ -1,13 +1,10 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc822" }:
+{ compiler ? "ghc822" }:
 
-let
-  inherit (nixpkgs) pkgs;
+with rec {
+  pkgs = (import ./nix/nixpkgs.nix {
+    inherit compiler; 
+  });
+  drv = pkgs.haskellPackages.refined;
+};
 
-  f = import ./nix/refined.nix;
-
-  haskellPackages = pkgs.haskell.packages.${compiler};
-
-  drv = haskellPackages.callPackage f {};
-
-in
-  drv
+drv
