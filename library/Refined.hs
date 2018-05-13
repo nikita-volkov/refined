@@ -89,6 +89,7 @@ module Refined
   , Negative
   , NonNegative
   , ZeroToOne
+  , NonZero
 
     -- * Foldable predicates
   , SizeLessThan
@@ -138,7 +139,7 @@ import           Data.Coerce                  (coerce)
 import           Data.Data                    (Data)
 import           Data.Either
                  (Either (Left, Right), either, isRight)
-import           Data.Eq                      (Eq, (==))
+import           Data.Eq                      (Eq, (==), (/=))
 import           Data.Foldable                (Foldable(length))
 import           Data.Function                (const, id, flip, ($))
 import           Data.Functor                 (Functor, fmap)
@@ -525,6 +526,18 @@ instance (Ord x, Num x, KnownNat n) => Predicate (EqualTo n) x where
       throwRefineOtherException (typeOf p)
         $ "Value does not equal " <> PP.pretty x'
 
+-- | A 'Predicate' ensuring that the value is not equal to the specified
+--   type-level number @n@.
+data NotEqualTo (n :: Nat)
+
+-- | FIXME: doc
+instance (Ord x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
+  validate p x = do
+    let x' = natVal p
+    unless (x /= fromIntegral x') $ do
+      throwRefineOtherException (typeOf p)
+        $ "Value does equal " <> PP.pretty x'
+
 -- | A 'Predicate' ensuring that the value is greater than zero.
 type Positive = GreaterThan 0
 
@@ -539,6 +552,9 @@ type NonNegative = From 0
 
 -- | An inclusive range of values from zero to one.
 type ZeroToOne = FromTo 0 1
+
+-- | A 'Predicate' ensuring that the value is not equal to zero.
+type NonZero = NotEqualTo 0
 
 --------------------------------------------------------------------------------
 
