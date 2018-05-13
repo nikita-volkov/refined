@@ -28,6 +28,7 @@
 --------------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -fwarn-redundant-constraints #-}
+{-# OPTIONS_GHC -funbox-strict-fields #-}
 
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
