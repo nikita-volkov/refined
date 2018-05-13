@@ -27,6 +27,8 @@
 
 --------------------------------------------------------------------------------
 
+{-# OPTIONS_GHC -fwarn-redundant-constraints #-}
+
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
@@ -690,8 +692,7 @@ newtype RefineT m a
 
 -- | FIXME: doc
 runRefineT
-  :: (Monad m)
-  => RefineT m a
+  :: RefineT m a
   -- ^ FIXME: doc
   -> m (Either RefineException a)
   -- ^ FIXME: doc
