@@ -20,6 +20,12 @@ import qualified Data.ByteString as ByteString
 main :: IO ()
 main = pure ()
 
+--boogle :: Refined NonZero Int
+--boogle = $$(refineTH 0)
+
+bamble :: Refined NonZero Int
+bamble = $$(refineTH 12)
+
 --foogle :: Refined EmptyList ByteString
 --foogle = $$(refineTH "")
 

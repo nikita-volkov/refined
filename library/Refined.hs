@@ -519,7 +519,7 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
 data EqualTo (n :: Nat)
 
 -- | FIXME: doc
-instance (Ord x, Num x, KnownNat n) => Predicate (EqualTo n) x where
+instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
     let x' = natVal p
     unless (x == fromIntegral x') $ do
@@ -531,7 +531,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (EqualTo n) x where
 data NotEqualTo (n :: Nat)
 
 -- | FIXME: doc
-instance (Ord x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
+instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do
     let x' = natVal p
     unless (x /= fromIntegral x') $ do
