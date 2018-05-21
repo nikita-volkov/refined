@@ -42,8 +42,8 @@ library
     library
   exposed-modules:
     Refined
+    Refined.TH
   other-modules:
-    Refined.Orphan
     Refined.PrettyPrinter 
   default-language:
     Haskell2010

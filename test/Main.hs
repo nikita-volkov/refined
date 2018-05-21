@@ -5,6 +5,7 @@
 module Main (main) where
 
 import Refined
+import Refined.TH
 import Control.Monad (guard)
 import Data.List (replicate)
 
@@ -14,20 +15,17 @@ import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as ByteString
-
 main :: IO ()
-main = pure ()
+main = print b
+
+b :: Either RefineException (Refined (Not NonZero) Int)
+b = refine 12
 
 --boogle :: Refined NonZero Int
 --boogle = $$(refineTH 0)
 
 bamble :: Refined NonZero Int
 bamble = $$(refineTH 12)
-
---foogle :: Refined EmptyList ByteString
---foogle = $$(refineTH "")
 
 -- this will fail to compile
 --badoogle :: Refined (Or Descending Ascending) [Int]
@@ -62,3 +60,5 @@ foo = foldl1 (\x acc -> x >>= guard >> acc)
 --foo' :: [Bool]
 --foo' = foldl1 (\x acc -> x >>= guard >> acc)
 --  ($$(refineTH (replicate 0 True)) :: Refined NonEmpty [Bool])
+
+

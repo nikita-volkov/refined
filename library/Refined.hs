@@ -45,6 +45,7 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeApplications           #-}
@@ -87,6 +88,7 @@ module Refined
   , To
   , FromTo
   , EqualTo
+  , NotEqualTo 
   , Positive
   , NonPositive
   , Negative
@@ -123,7 +125,7 @@ module Refined
   , displayRefineException
 
     -- ** 'RefineT' and 'RefineM'
-  , RefineT, runRefineT
+  , RefineT, runRefineT, mapRefineT
   , RefineM, runRefineM
   , throwRefine
   , throwRefineOtherException
@@ -147,6 +149,7 @@ import           Data.Foldable                (Foldable(length))
 import           Data.Function                (const, id, flip, ($))
 import           Data.Functor                 (Functor, fmap)
 import           Data.Functor.Identity        (Identity (runIdentity))
+import           Data.List                    ((++))
 import qualified Data.List                    as List
 import           Data.Monoid                  (Monoid(mempty,mappend),mconcat)
 import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
@@ -175,8 +178,6 @@ import           GHC.Exts                     (IsList(Item, fromList, toList))
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
--- Use CPP to allow user to not import this?
-import Refined.Orphan () -- for instances
 import qualified Refined.PrettyPrinter        as PP
 
 import qualified Language.Haskell.TH.Syntax   as TH
@@ -207,7 +208,7 @@ f .> g = \x -> g (f x)
 --   gets around the checking of the predicate (thus making the
 --   function 'unrefine' safe). If you would /really/ like to
 --   construct a 'Refined' value without checking the predicate,
---   use 'unsafeCoerce'.
+--   use 'Unsafe.Coerce.unsafeCoerce'.
 newtype Refined p x = Refined x
   deriving
     ( Data
@@ -221,6 +222,8 @@ newtype Refined p x = Refined x
     , Traversable
     , Typeable
     )
+
+type role Refined phantom representational
 
 instance Semigroup x => Semigroup (Refined p x) where
   (<>) = liftA2 (<>)
@@ -237,7 +240,6 @@ instance Monad (Refined p) where
   return = Refined
   (Refined x) >>= inj = inj x
 
--- | FIXME: doc
 instance (Read x, Predicate p x) => Read (Refined p x) where
   readsPrec d = readParen (d > 10) $ \r1 -> do
     ("Refined", r2) <- lex r1
@@ -246,7 +248,6 @@ instance (Read x, Predicate p x) => Read (Refined p x) where
       Right val -> [(val, r3)]
       Left  _   -> []
 
--- | FIXME: doc
 instance (TH.Lift x) => TH.Lift (Refined p x) where
   lift (Refined a) = [|Refined a|]
 
@@ -263,23 +264,31 @@ refine x = do
     pure (Refined x)
 {-# INLINABLE refine #-}
 
--- | FIXME: doc
+-- | Constructs a 'Refined' value at run-time,
+--   calling 'Control.Monad.Catch.throwM' if the value
+--   does not satisfy the predicate.
 refineThrow :: (Predicate p x, MonadThrow m) => x -> m (Refined p x)
 refineThrow = refine .> either MonadThrow.throwM pure
 {-# INLINABLE refineThrow #-}
 
--- | FIXME: doc
+-- | Constructs a 'Refined' value at run-time,
+--   calling 'Control.Monad.Fail.fail' if the value
+--   does not satisfy the predicate.
 refineFail :: (Predicate p x, MonadFail m) => x -> m (Refined p x)
 refineFail = refine .> either (displayException .> fail) pure
 {-# INLINABLE refineFail #-}
 
--- | FIXME: doc
+-- | Constructs a 'Refined' value at run-time,
+--   calling 'Control.Monad.Error.throwError' if the value
+--   does not satisfy the predicate.
 refineError :: (Predicate p x, MonadError RefineException m)
             => x -> m (Refined p x)
 refineError = refine .> either MonadError.throwError pure
 {-# INLINABLE refineError #-}
 
--- | FIXME: doc
+-- | Constructs a 'Refined' value at run-time,
+--   calling 'Prelude.error' if the value
+--   does not satisfy the predicate.
 --
 --   WARNING: this function is not total!
 unsafeRefine :: (Predicate p x) => x -> Refined p x
@@ -339,7 +348,6 @@ class (Typeable p) => Predicate p x where
 -- | The negation of a predicate.
 data Not p
 
--- | FIXME: doc
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
   validate p x = do
     result <- runRefineT (validate @p undefined x)
@@ -355,7 +363,6 @@ infixr 3 &&
 -- | The conjunction of two predicates.
 type (&&) = And
 
--- | FIXME: doc
 instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
          ) => Predicate (And l r) x where
   validate p x = do
@@ -376,7 +383,6 @@ infixr 2 ||
 -- | The disjunction of two predicates.
 type (||) = Or
 
--- | FIXME: doc
 instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
          ) => Predicate (Or l r) x where
   validate p x = do
@@ -392,7 +398,6 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 -- which is less than the specified type-level number.
 data SizeLessThan (n :: Nat)
 
--- | FIXME: doc
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
   validate p x = do
     let x' = natVal p
@@ -404,7 +409,6 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
 -- which is greater than the specified type-level number.
 data SizeGreaterThan (n :: Nat)
 
--- | FIXME: doc
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
   validate p x = do
     let x' = natVal p
@@ -416,7 +420,6 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
 -- which is equal to the specified type-level number.
 data SizeEqualTo (n :: Nat)
 
--- | FIXME: doc
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
   validate p x = do
     let x' = natVal p
@@ -455,7 +458,6 @@ instance (IsList t, Ord (Item t)) => Predicate Descending t where
 --   specified type-level number.
 data LessThan (n :: Nat)
 
--- | FIXME: doc
 instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
   validate p x = do
     let x' = natVal p
@@ -467,7 +469,6 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
 --   specified type-level number.
 data GreaterThan (n :: Nat)
 
--- | FIXME: doc
 instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
   validate p x = do
     let x' = natVal p
@@ -479,7 +480,6 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
 --   specified type-level number.
 data From (n :: Nat)
 
--- | FIXME: doc
 instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
   validate p x = do
     let x' = natVal p
@@ -491,7 +491,6 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
 --   specified type-level number.
 data To (n :: Nat)
 
--- | FIXME: doc
 instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
   validate p x = do
     let x' = natVal p
@@ -502,7 +501,6 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
 -- | A 'Predicate' ensuring that the value is within an inclusive range.
 data FromTo (mn :: Nat) (mx :: Nat)
 
--- | FIXME: doc
 instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
          ) => Predicate (FromTo mn mx) x where
   validate p x = do
@@ -521,7 +519,6 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
 --   type-level number @n@.
 data EqualTo (n :: Nat)
 
--- | FIXME: doc
 instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
     let x' = natVal p
@@ -533,7 +530,6 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
 --   type-level number @n@.
 data NotEqualTo (n :: Nat)
 
--- | FIXME: doc
 instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do
     let x' = natVal p
@@ -621,6 +617,7 @@ leftOr = coerce
 --
 -- @
 -- instance Weaken r (Or l r)
+-- @
 rightOr :: Refined r x -> Refined (Or l r) x
 rightOr = coerce
 
@@ -669,9 +666,11 @@ data RefineException
 
 -- | Display a 'RefineException' as a @'PP.Doc' ann@
 displayRefineException :: RefineException -> PP.Doc ann
-displayRefineException
-  = show .> Text.pack .> PP.pretty
-    -- ↑ FIXME: pretty-printer should be more sophisticated
+displayRefineException (RefineNotException tr)
+  = PP.pretty $ Text.pack $ "The negation of the predicate " ++ show tr ++ " does not hold."
+displayRefineException r 
+  = (show .> Text.pack .> PP.pretty) r
+    -- FIXME: pretty-printer should be more sophisticated
 
 -- | FIXME: doc
 instance PP.Pretty RefineException where
@@ -683,7 +682,11 @@ instance Exception RefineException where
 
 --------------------------------------------------------------------------------
 
--- | FIXME: doc
+-- | A monad transformer that adds @'RefineException'@s to other monads.
+--   
+--   The @'pure'@ and @'return'@ functions yield computations that produce
+--   the given value, while @'>>='@ sequences two subcomputations, exiting
+--   on the first @'RefineException'@.
 newtype RefineT m a
   = RefineT (ExceptT RefineException m a)
   deriving ( Functor, Applicative, Monad, MonadFix
@@ -691,13 +694,22 @@ newtype RefineT m a
            , Generic, Generic1
            )
 
--- | FIXME: doc
+-- | The inverse of @'RefineT'@.
 runRefineT
   :: RefineT m a
   -- ^ FIXME: doc
   -> m (Either RefineException a)
   -- ^ FIXME: doc
 runRefineT = coerce .> ExceptT.runExceptT
+
+-- | Map the unwrapped computation using the given function.
+--
+--   @'runRefineT' ('mapRefineT' f m) = f ('runRefineT' m)@
+mapRefineT
+  :: (m (Either RefineException a) -> n (Either RefineException b))
+  -> RefineT m a
+  -> RefineT n b
+mapRefineT f = coerce .> ExceptT.mapExceptT f .> coerce
 
 --------------------------------------------------------------------------------
 
