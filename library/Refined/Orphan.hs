@@ -7,11 +7,23 @@
 
 module Refined.Orphan () where
 
-import Control.Monad
+import Data.IntMap.Internal (IntMap(..))
 import Data.Map.Internal (Map(..))
 import Data.Set.Internal (Set(..))
+import Data.Sequence.Internal (Digit(..), Elem(..), FingerTree(..), Node(..), Seq(..), ViewL(..), ViewR(..))
+import Data.Tree (Tree(..))
 
-import qualified Language.Haskell.TH.Syntax as TH
+import Language.Haskell.TH.Syntax (Lift)
 
-deriving instance (TH.Lift k, TH.Lift v) => TH.Lift (Map k v)
-deriving instance (TH.Lift v) => TH.Lift (Set v)
+deriving instance (Lift a) => Lift (IntMap a)
+deriving instance (Lift k, Lift v) => Lift (Map k v)
+deriving instance (Lift v) => Lift (Set v)
+
+deriving instance (Lift a) => Lift (Elem a)
+deriving instance (Lift a) => Lift (Node a)
+deriving instance (Lift a) => Lift (Digit a)
+deriving instance (Lift a) => Lift (FingerTree a)
+deriving instance (Lift a) => Lift (Seq a)
+deriving instance (Lift a) => Lift (ViewL a)
+deriving instance (Lift a) => Lift (ViewR a)
+deriving instance (Lift a) => Lift (Tree a)

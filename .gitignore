@@ -1,3 +1,4 @@
 dist*
 *.sw*
 result*
+*.ghc*
