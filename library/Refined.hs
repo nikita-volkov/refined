@@ -28,7 +28,8 @@
 --------------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -fwarn-redundant-constraints #-}
-{-# OPTIONS_GHC -funbox-strict-fields #-}
+{-# OPTIONS_GHC -fwarn-unused-imports        #-}
+{-# OPTIONS_GHC -funbox-strict-fields        #-}
 
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
@@ -136,9 +137,9 @@ module Refined
 import           Prelude
                  (Num, error, fromIntegral, undefined)
 
-import           Control.Applicative          (Applicative (liftA2, pure, (<*>)))
+import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
-import           Control.Monad                (Monad(return, (>>=)), unless, when)
+import           Control.Monad                (Monad, unless, when)
 import           Data.Bool                    ((&&))
 import           Data.Coerce                  (coerce)
 import           Data.Data                    (Data)
@@ -174,7 +175,7 @@ import           Control.Monad.Trans.Class    (MonadTrans (lift))
 import           Control.Monad.Trans.Except   (ExceptT)
 import qualified Control.Monad.Trans.Except   as ExceptT
 
-import           GHC.Exts                     (IsList(Item, fromList, toList))
+import           GHC.Exts                     (IsList(Item, toList))
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
@@ -226,19 +227,11 @@ newtype Refined p x = Refined x
 type role Refined phantom representational
 
 instance Semigroup x => Semigroup (Refined p x) where
-  (<>) = liftA2 (<>)
+  (Refined x) <> (Refined y) = Refined (x <> y) 
 
 instance Monoid x => Monoid (Refined p x) where
   mempty  = Refined mempty
-  mappend = liftA2 mappend
-
-instance Applicative (Refined p) where
-  pure = Refined
-  (Refined f) <*> (Refined a) = Refined (f a)
-
-instance Monad (Refined p) where
-  return = Refined
-  (Refined x) >>= inj = inj x
+  mappend (Refined x) (Refined y) = Refined (mappend x y) 
 
 instance (Read x, Predicate p x) => Read (Refined p x) where
   readsPrec d = readParen (d > 10) $ \r1 -> do
