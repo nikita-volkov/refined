@@ -28,7 +28,7 @@
 --------------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -fwarn-redundant-constraints #-}
-{-# OPTIONS_GHC -fwarn-unused-imports        #-}
+{-# OPTIONS_GHC -Wall                        #-}
 {-# OPTIONS_GHC -funbox-strict-fields        #-}
 
 {-# LANGUAGE ConstraintKinds            #-}
@@ -127,8 +127,8 @@ module Refined
 
     -- ** 'RefineT' and 'RefineM'
   , RefineT, runRefineT, mapRefineT
-  , RefineM, runRefineM
-  , throwRefine
+  , RefineM, refineM, runRefineM
+  , throwRefine, catchRefine
   , throwRefineOtherException
   ) where
 
@@ -398,6 +398,8 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
       throwRefineOtherException (typeOf p)
         $ "Size of Foldable is not less than " <> PP.pretty x'
 
+--------------------------------------------------------------------------------
+
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is greater than the specified type-level number.
 data SizeGreaterThan (n :: Nat)
@@ -408,6 +410,8 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
     unless (length x > fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
         $ "Size of Foldable is not greater than " <> PP.pretty x'
+
+--------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is equal to the specified type-level number.
@@ -420,9 +424,6 @@ instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
       throwRefineOtherException (typeOf p)
         $ "Size of Foldable is not equal to " <> PP.pretty x'
 
--- | A 'Predicate' ensuring that the 'Foldable' is non-empty.
-type NonEmpty = SizeGreaterThan 0
-
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the 'IsList' contains elements
@@ -434,6 +435,8 @@ instance (IsList t, Ord (Item t)) => Predicate Ascending t where
     unless (List.sort (toList x) == (toList x)) $ do
       throwRefineOtherException (typeOf p)
         $ "IsList is not in ascending order "
+
+--------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the 'IsList' contains elements
 -- in a strictly descending order.
@@ -458,6 +461,8 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
       throwRefineOtherException (typeOf p)
         $ "Value is not less than " <> PP.pretty x'
 
+--------------------------------------------------------------------------------
+
 -- | A 'Predicate' ensuring that the value is greater than the
 --   specified type-level number.
 data GreaterThan (n :: Nat)
@@ -468,6 +473,8 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
     unless (x > fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
         $ "Value is not greater than " <> PP.pretty x'
+
+--------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is greater than or equal to the
 --   specified type-level number.
@@ -480,6 +487,8 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
       throwRefineOtherException (typeOf p)
         $ "Value is less than " <> PP.pretty x'
 
+--------------------------------------------------------------------------------
+
 -- | A 'Predicate' ensuring that the value is less than or equal to the
 --   specified type-level number.
 data To (n :: Nat)
@@ -490,6 +499,8 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
     unless (x <= fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
         $ "Value is greater than " <> PP.pretty x'
+
+--------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is within an inclusive range.
 data FromTo (mn :: Nat) (mx :: Nat)
@@ -508,6 +519,8 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
                 ] |> mconcat
       throwRefineOtherException (typeOf p) msg
 
+--------------------------------------------------------------------------------
+
 -- | A 'Predicate' ensuring that the value is equal to the specified
 --   type-level number @n@.
 data EqualTo (n :: Nat)
@@ -519,6 +532,8 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
       throwRefineOtherException (typeOf p)
         $ "Value does not equal " <> PP.pretty x'
 
+--------------------------------------------------------------------------------
+
 -- | A 'Predicate' ensuring that the value is not equal to the specified
 --   type-level number @n@.
 data NotEqualTo (n :: Nat)
@@ -529,6 +544,8 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
     unless (x /= fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
         $ "Value does equal " <> PP.pretty x'
+
+--------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is greater than zero.
 type Positive = GreaterThan 0
@@ -547,6 +564,9 @@ type ZeroToOne = FromTo 0 1
 
 -- | A 'Predicate' ensuring that the value is not equal to zero.
 type NonZero = NotEqualTo 0
+
+-- | A 'Predicate' ensuring that the 'Foldable' is non-empty.
+type NonEmpty = SizeGreaterThan 0
 
 --------------------------------------------------------------------------------
 
@@ -709,27 +729,44 @@ mapRefineT f = coerce .> ExceptT.mapExceptT f .> coerce
 -- | @'RefineM' a@ is equivalent to @'RefineT' 'Identity' a@ for any type @a@.
 type RefineM a = RefineT Identity a
 
+-- | Constructs a computation in the 'RefineM' monad. (The inverse of @'runRefineM'@).
+refineM
+  :: Either RefineException a
+  -> RefineM a
+refineM = ExceptT.except .> coerce
+
 -- | Run a monadic action of type @'RefineM' a@,
 --   yielding an @'Either' 'RefineException' a@.
 --
 --   This is just defined as @'runIdentity' '.' 'runRefineT'@.
 runRefineM
   :: RefineM a
-  -- ^ FIXME: doc
   -> Either RefineException a
-  -- ^ FIXME: doc
 runRefineM = runRefineT .> runIdentity
 
 --------------------------------------------------------------------------------
 
--- | FIXME: doc
+-- | One can use @'throwRefine'@ inside of a monadic
+--   context to begin processing a @'RefineException'@.
 throwRefine
   :: (Monad m)
   => RefineException
-  -- ^ FIXME: doc
   -> RefineT m a
-  -- ^ FIXME: doc
 throwRefine = MonadError.throwError
+
+-- | A handler function to handle previous @'RefineException'@s
+--   and return to normal execution. A common idiom is:
+--
+--   @ do { action1; action2; action3 } `'catchRefine'` handler @
+--
+--   where the action functions can call @'throwRefine'@. Note that
+--   handler and the do-block must have the same return type.
+catchRefine
+  :: (Monad m)
+  => RefineT m a
+  -> (RefineException -> RefineT m a)
+  -> RefineT m a
+catchRefine = MonadError.catchError
 
 -- | FIXME: doc
 throwRefineOtherException
