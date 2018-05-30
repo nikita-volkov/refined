@@ -27,17 +27,12 @@
 
 --------------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -fwarn-redundant-constraints #-}
 {-# OPTIONS_GHC -Wall                        #-}
 {-# OPTIONS_GHC -funbox-strict-fields        #-}
 
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveFoldable             #-}
-{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE ExplicitNamespaces         #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -148,10 +143,9 @@ import           Prelude
 
 import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
-import           Control.Monad                (Monad(return), unless, when)
+import           Control.Monad                (Monad, unless, when)
 import           Data.Bool                    ((&&))
 import           Data.Coerce                  (coerce)
-import           Data.Data                    (Data)
 import           Data.Either
                  (Either (Left, Right), either, isRight)
 import           Data.Eq                      (Eq, (==), (/=))
@@ -221,10 +215,11 @@ f .> g = \x -> g (f x)
 --   use 'Unsafe.Coerce.unsafeCoerce'.
 newtype Refined p x = Refined x
   deriving
-    ( Data
-    , Eq
-    , Generic
-    , Generic1
+    (
+      --Data
+      Eq
+    --, Generic
+    --, Generic1
     , Ord
     , Show
     , Typeable
@@ -720,7 +715,7 @@ instance Exception RefineException where
 
 -- | A monad transformer that adds @'RefineException'@s to other monads.
 --   
---   The @'pure'@ and @'return'@ functions yield computations that produce
+--   The @'pure'@ and @'Control.Monad.return'@ functions yield computations that produce
 --   the given value, while @'>>='@ sequences two subcomputations, exiting
 --   on the first @'RefineException'@.
 newtype RefineT m a
