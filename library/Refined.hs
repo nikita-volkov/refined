@@ -161,12 +161,11 @@ import           Data.Functor                 (Functor, fmap)
 import           Data.Functor.Identity        (Identity (runIdentity))
 import           Data.List                    ((++))
 import qualified Data.List                    as List
-import           Data.Monoid                  (Monoid(mempty,mappend),mconcat)
+import           Data.Monoid                  (mconcat)
 import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
 import           Data.Proxy                   (Proxy (Proxy))
 import           Data.Semigroup               (Semigroup((<>)))
 import           Data.These                   (These(..))
-import           Data.Traversable             (Traversable)
 import           Data.Typeable                (TypeRep, Typeable, typeOf)
 import           Data.Void                    (Void)
 import           Text.Read                    (Read (readsPrec), lex, readParen)
@@ -187,7 +186,7 @@ import           GHC.Exts                     (IsList(Item, toList))
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
-import qualified Data.Text.Prettyprint.Doc                 as PP
+import qualified Data.Text.Prettyprint.Doc    as PP
 
 import qualified Language.Haskell.TH.Syntax   as TH
 
@@ -224,24 +223,14 @@ newtype Refined p x = Refined x
   deriving
     ( Data
     , Eq
-    , Foldable
-    , Functor
     , Generic
     , Generic1
     , Ord
     , Show
-    , Traversable
     , Typeable
     )
 
 type role Refined phantom representational
-
-instance Semigroup x => Semigroup (Refined p x) where
-  (Refined x) <> (Refined y) = Refined (x <> y) 
-
-instance Monoid x => Monoid (Refined p x) where
-  mempty  = Refined mempty
-  mappend (Refined x) (Refined y) = Refined (mappend x y) 
 
 instance (Read x, Predicate p x) => Read (Refined p x) where
   readsPrec d = readParen (d > 10) $ \r1 -> do
