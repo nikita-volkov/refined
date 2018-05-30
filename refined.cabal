@@ -1,7 +1,7 @@
 name:
   refined
 version:
-  0.1.2.1
+  0.2.0.0
 synopsis:
   Refinement types with static and runtime checking
 description:
@@ -30,6 +30,10 @@ build-type:
   Simple
 cabal-version:
   >=1.10
+tested-with:
+    GHC == 8.0.2
+  , GHC == 8.2.2
+  , GHC == 8.4.2
 
 source-repository head
   type:
@@ -46,23 +50,11 @@ library
   default-language:
     Haskell2010
   build-depends:
-      base >= 4.7 && < 5
-    , containers
-    , exceptions 
-    , mtl 
-    , prettyprinter
-    , prettyprinter-ansi-terminal
-    , template-haskell >= 2.9 && < 3
-    , these 
-    , transformers
-
-test-suite test
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test
-  main-is: Main.hs
-  build-depends:
-      base
-    , bytestring 
-    , containers
-    , refined
-  default-language:    Haskell2010
+      base >= 4.9 && < 5
+    , containers >= 0.5.9.1
+    , exceptions >= 0.10.0
+    , mtl >= 2.2.1
+    , prettyprinter >= 1.1.0.1
+    , template-haskell >= 2.9 && < 3.0
+    , these >= 0.7.4
+    , transformers >= 0.5.0.0

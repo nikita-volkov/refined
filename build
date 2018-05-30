@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+# To use this script on Ubuntu, you will need to first run the following:
+# 
+# sudo apt install ghc-8.0.2 ghc-8.2.2 ghc-8.4.2
+
+declare -a ghcs=("8.0.2" "8.2.2" "8.4.2")
+
+## now loop through the above array
+for g in "${ghcs[@]}"
+do
+   cabal new-build --builddir "dist-$g" -w "/opt/ghc/bin/ghc-$g"
+done
+
