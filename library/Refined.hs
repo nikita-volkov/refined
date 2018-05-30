@@ -56,7 +56,16 @@
 
 --------------------------------------------------------------------------------
 
--- | FIXME: doc
+-- | In type theory, a refinement type is a type endowed
+--   with a predicate which is assumed to hold for any element
+--   of the refined type.
+--
+--   This library allows one to capture the idea of a refinement type
+--   using the 'Refined' type. A 'Refined' @p@ @x@ wraps a value
+--   of type @x@, ensuring that it satisfies a type-level predicate @p@.
+--
+--   A simple introduction to this library can be found here: http://nikita-volkov.github.io/refined/
+--
 module Refined
   ( -- * 'Refined'
     Refined
@@ -139,7 +148,7 @@ import           Prelude
 
 import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
-import           Control.Monad                (Monad, unless, when)
+import           Control.Monad                (Monad(return), unless, when)
 import           Data.Bool                    ((&&))
 import           Data.Coerce                  (coerce)
 import           Data.Data                    (Data)
@@ -156,13 +165,12 @@ import           Data.Monoid                  (Monoid(mempty,mappend),mconcat)
 import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
 import           Data.Proxy                   (Proxy (Proxy))
 import           Data.Semigroup               (Semigroup((<>)))
+import           Data.These                   (These(..))
 import           Data.Traversable             (Traversable)
 import           Data.Typeable                (TypeRep, Typeable, typeOf)
 import           Data.Void                    (Void)
 import           Text.Read                    (Read (readsPrec), lex, readParen)
 import           Text.Show                    (Show (show))
-
-import qualified Data.Text                    as Text
 
 import           Control.Monad.Catch          (MonadThrow)
 import qualified Control.Monad.Catch          as MonadThrow
@@ -179,7 +187,7 @@ import           GHC.Exts                     (IsList(Item, toList))
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
-import qualified Refined.PrettyPrinter        as PP
+import qualified Data.Text.Prettyprint.Doc                 as PP
 
 import qualified Language.Haskell.TH.Syntax   as TH
 
@@ -206,8 +214,10 @@ f .> g = \x -> g (f x)
 --   The only ways that this library provides to construct
 --   a value of type 'Refined' are with the 'refine-' family
 --   of functions, because the use of the newtype constructor
---   gets around the checking of the predicate (thus making the
---   function 'unrefine' safe). If you would /really/ like to
+--   gets around the checking of the predicate. This restriction
+--   on the user makes 'unrefine' safe.
+--   
+--   If you would /really/ like to
 --   construct a 'Refined' value without checking the predicate,
 --   use 'Unsafe.Coerce.unsafeCoerce'.
 newtype Refined p x = Refined x
@@ -332,6 +342,7 @@ unrefine = coerce
 -- | A typeclass which defines a runtime interpretation of
 --   a type-level predicate @p@ for type @x@.
 class (Typeable p) => Predicate p x where
+  {-# MINIMAL validate #-} 
   -- | Check the value @x@ according to the predicate @p@,
   --   producing an error string if the value does not satisfy.
   validate :: (Monad m) => p -> x -> RefineT m ()
@@ -363,9 +374,10 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
     b <- lift $ runRefineT $ validate @r undefined x
     let throw err = throwRefine (RefineAndException (typeOf p) err)
     case (a, b) of
-      (Left   e,        _) -> throw (Left e)
-      (Right (), Left   e) -> throw (Right e)
-      (Right (), Right ()) -> pure ()
+      (Left  e, Left e1) -> throw (These e e1)
+      (Left  e,       _) -> throw (This e)
+      (Right _, Left  e) -> throw (That e)
+      (Right _, Right _) -> pure ()
 
 --------------------------------------------------------------------------------
 
@@ -394,9 +406,11 @@ data SizeLessThan (n :: Nat)
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
   validate p x = do
     let x' = natVal p
-    unless (length x < fromIntegral x') $ do
+        sz = length x
+    unless (sz < fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
-        $ "Size of Foldable is not less than " <> PP.pretty x'
+        $ "Size of Foldable is not less than " <> PP.pretty x' <> "\n"
+        <> "\tSize is: " <> PP.pretty sz
 
 --------------------------------------------------------------------------------
 
@@ -407,9 +421,11 @@ data SizeGreaterThan (n :: Nat)
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
   validate p x = do
     let x' = natVal p
-    unless (length x > fromIntegral x') $ do
+        sz = length x
+    unless (sz > fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
-        $ "Size of Foldable is not greater than " <> PP.pretty x'
+        $ "Size of Foldable is not greater than " <> PP.pretty x' <> "\n"
+        <> "\tSize is: " <> PP.pretty sz
 
 --------------------------------------------------------------------------------
 
@@ -420,9 +436,11 @@ data SizeEqualTo (n :: Nat)
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
   validate p x = do
     let x' = natVal p
-    unless (length x == fromIntegral x') $ do
+        sz = length x
+    unless (sz == fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
-        $ "Size of Foldable is not equal to " <> PP.pretty x'
+        $ "Size of Foldable is not equal to " <> PP.pretty x' <> "\n"
+        <> "\tSize is: " <> PP.pretty sz
 
 --------------------------------------------------------------------------------
 
@@ -432,7 +450,8 @@ data Ascending
 
 instance (IsList t, Ord (Item t)) => Predicate Ascending t where
   validate p x = do
-    unless (List.sort (toList x) == (toList x)) $ do
+    let asList = toList x
+    unless (List.sort asList == asList) $ do
       throwRefineOtherException (typeOf p)
         $ "IsList is not in ascending order "
 
@@ -444,7 +463,8 @@ data Descending
 
 instance (IsList t, Ord (Item t)) => Predicate Descending t where
   validate p x = do
-    unless (List.reverse (List.sort (toList x)) == (toList x)) $ do
+    let asList = toList x
+    unless (List.reverse (List.sort asList) == asList) $ do
       throwRefineOtherException (typeOf p)
         $ "IsList is not in ascending order "
 
@@ -640,58 +660,72 @@ rightOr = coerce
 data RefineException
   = -- | A 'RefineException' for failures involving the 'Not' predicate.
     RefineNotException
-    { _RefineException_typeRep  :: !TypeRep
+    { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'Not' p@ type.
     }
 
   | -- | A 'RefineException' for failures involving the 'And' predicate.
     RefineAndException
-    { _RefineException_typeRep  :: !TypeRep
+    { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'And' l r@ type.
-    , _RefineException_andChild :: !(Either RefineException RefineException)
-      -- ^ An 'Either' encoding which branch of the 'And' failed:
+    , _RefineException_andChild  :: !(These RefineException RefineException)
+      -- ^ A 'These' encoding which branch(es) of the 'And' failed:
       --   if the 'RefineException' came from the @l@ predicate, then
-      --   this will be 'Left', and if it came from the @r@ predicate,
-      --   this will be 'Right'.
+      --   this will be 'This', if it came from the @r@ predicate, this
+      --   will be 'That', and if it came from both @l@ and @r@, this
+      --   will be 'These'.
+      
+      -- note to self: what am I, Dr. Seuss?
     }
 
   | -- | A 'RefineException' for failures involving the 'Or' predicate.
     RefineOrException
-    { _RefineException_typeRep  :: !TypeRep
+    { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'Or' l r@ type.
-    , _RefineException_orLChild :: !RefineException
+    , _RefineException_orLChild  :: !RefineException
       -- ^ The 'RefineException' for the @l@ failure.
-    , _RefineException_orRChild :: !RefineException
+    , _RefineException_orRChild  :: !RefineException
       -- ^ The 'RefineException' for the @l@ failure.
     }
 
   | -- | A 'RefineException' for failures involving all other predicates.
     RefineOtherException
-    { _RefineException_typeRep :: !TypeRep
+    { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the predicate that failed.
-    , _RefineException_message :: !(PP.Doc Void)
+    , _RefineException_message  :: !(PP.Doc Void)
       -- ^ A custom message to display.
-      --
-      --   FIXME: once 'displayRefineException' is improved, remember to write
-      --   some tips on how best to format messages that go here.
     }
-  deriving (Show, Generic)
+  deriving (Generic)
+
+instance Show RefineException where
+  show = PP.pretty .> show
 
 -- | Display a 'RefineException' as a @'PP.Doc' ann@
 displayRefineException :: RefineException -> PP.Doc ann
+displayRefineException (RefineOtherException tr msg)
+  = PP.pretty ("The predicate (" ++ show tr ++ ") does not hold: \n \t" ++ show msg)
 displayRefineException (RefineNotException tr)
-  = PP.pretty $ Text.pack $ "The negation of the predicate " ++ show tr ++ " does not hold."
-displayRefineException r 
-  = (show .> Text.pack .> PP.pretty) r
-    -- FIXME: pretty-printer should be more sophisticated
+  = PP.pretty ("The negation of the predicate (" ++ show tr ++ ") does not hold.")
+displayRefineException (RefineOrException tr orLChild orRChild)
+  = PP.pretty ("Both subpredicates failed in: (" ++ show tr ++ "). \n")
+      <> "\t" <> (displayRefineException orLChild) <> "\n"
+      <> "\t" <> (displayRefineException orRChild) <> "\n"
+displayRefineException (RefineAndException tr andChild)
+  = PP.pretty ("The predicate (" ++ show tr ++ ") does not hold: \n \t")
+      <> case andChild of
+           This a -> "The left subpredicate does not hold:\n\t" <> displayRefineException a <> "\n"
+           That b -> "The right subpredicate does not hold:\n\t" <> displayRefineException b <> "\n"
+           These a b -> "\t Neither subpredicate holds: \n"
+             <> "\t" <> displayRefineException a <> "\n"
+             <> "\t" <> displayRefineException b <> "\n"
 
--- | FIXME: doc
+-- | Pretty-print a 'RefineException'.
 instance PP.Pretty RefineException where
   pretty = displayRefineException
 
--- | FIXME: doc
+-- | Encode a 'RefineException' for use with \Control.Exception\.
 instance Exception RefineException where
-  displayException = PP.pretty .> show
+  displayException = show
 
 --------------------------------------------------------------------------------
 
@@ -710,9 +744,7 @@ newtype RefineT m a
 -- | The inverse of @'RefineT'@.
 runRefineT
   :: RefineT m a
-  -- ^ FIXME: doc
   -> m (Either RefineException a)
-  -- ^ FIXME: doc
 runRefineT = coerce .> ExceptT.runExceptT
 
 -- | Map the unwrapped computation using the given function.
@@ -768,15 +800,17 @@ catchRefine
   -> RefineT m a
 catchRefine = MonadError.catchError
 
--- | FIXME: doc
+-- | A handler for a @'RefineException'@.
+--   
+--   'throwRefineOtherException' is useful for defining what
+--   behaviour 'validate' should have in the event of a predicate failure.
 throwRefineOtherException
   :: (Monad m)
   => TypeRep
-  -- ^ FIXME: doc
+  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
   -> PP.Doc Void
-  -- ^ FIXME: doc
+  -- ^ A 'PP.Doc' 'Void' encoding a custom error message to be pretty-printed. 
   -> RefineT m a
-  -- ^ FIXME: doc
 throwRefineOtherException rep
   = RefineOtherException rep .> throwRefine
 

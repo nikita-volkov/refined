@@ -43,8 +43,6 @@ library
   exposed-modules:
     Refined
     Refined.TH
-  other-modules:
-    Refined.PrettyPrinter 
   default-language:
     Haskell2010
   build-depends:
@@ -55,7 +53,7 @@ library
     , prettyprinter
     , prettyprinter-ansi-terminal
     , template-haskell >= 2.9 && < 3
-    , text 
+    , these 
     , transformers
 
 test-suite test

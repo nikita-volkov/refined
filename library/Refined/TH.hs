@@ -9,7 +9,6 @@
 {-| This module contains orphan 'Lift' instances of types in common libraries
     such as 'containers', for more available compile-time checking of predicates.
 
-    You can disable the use of these instances with the cabal flag `-f-nolift`.
 -}
 
 module Refined.TH () where
