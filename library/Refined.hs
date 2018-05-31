@@ -32,6 +32,7 @@
 
 {-# LANGUAGE ConstraintKinds            #-}
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE ExplicitNamespaces         #-}
 {-# LANGUAGE FlexibleContexts           #-}
@@ -215,11 +216,8 @@ f .> g = \x -> g (f x)
 --   use 'Unsafe.Coerce.unsafeCoerce'.
 newtype Refined p x = Refined x
   deriving
-    (
-      --Data
-      Eq
-    --, Generic
-    --, Generic1
+    ( Eq
+    , Foldable 
     , Ord
     , Show
     , Typeable
