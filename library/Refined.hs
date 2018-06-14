@@ -223,7 +223,7 @@ newtype Refined p x = Refined x
     , Typeable
     )
 
-type role Refined phantom representational
+type role Refined nominal nominal
 
 instance (Read x, Predicate p x) => Read (Refined p x) where
   readsPrec d = readParen (d > 10) $ \r1 -> do
