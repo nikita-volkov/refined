@@ -38,23 +38,28 @@
 --   that the refinement predicate holds.
 module Refined.Unsafe
   ( -- * 'Refined'
-    Refined(Refined)
+    Refined
 
     -- ** Creation
   , reallyUnsafeRefine 
   , unsafeRefine
+
+    -- ** Coercion
+  , reallyUnsafeUnderlyingRefined
+  , reallyUnsafeRefinedRefined
   ) where
 
 --------------------------------------------------------------------------------
 
 import           Control.Exception            (Exception(displayException))
-import           Data.Coerce                  (coerce)
+import           Data.Coerce                  (Coercible, coerce)
 import           Data.Either                  (either)
 import           Data.Function                (id)
 
 import           GHC.Err                      (error)
 
 import           Refined.Internal             (Refined(Refined), Predicate, refine, (.>))
+import           Data.Type.Coercion           (Coercion (..))
 
 --------------------------------------------------------------------------------
 
@@ -75,3 +80,12 @@ reallyUnsafeRefine :: x -> Refined p x
 reallyUnsafeRefine = coerce
 {-# INLINE reallyUnsafeRefine #-}
 
+-- | A coercion between a 'Refined' type and a type coercible with
+-- its underlying type.
+reallyUnsafeUnderlyingRefined :: Coercible x y => Coercion x (Refined p y)
+reallyUnsafeUnderlyingRefined = Coercion
+
+-- | A coercion between two 'Refined' types. This may be more convenient
+-- than 'reallyUnsafeUnderlyingRefined' in some cases.
+reallyUnsafeRefinedRefined :: Coercible x y => Coercion (Refined p x) (Refined q y)
+reallyUnsafeRefinedRefined = Coercion
