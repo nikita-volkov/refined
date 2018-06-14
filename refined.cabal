@@ -16,7 +16,7 @@ bug-reports:
 author:
   Nikita Volkov <nikita.y.volkov@mail.ru>
 maintainer:
-  Nikita Volkov <nikita.y.volkov@mail.ru>
+  chessai <chessai1996@gmail.com> 
 copyright:
   Copyright © 2015, Nikita Volkov
   Copyright © 2018, Remy Goldschmidt
@@ -46,7 +46,9 @@ library
     library
   exposed-modules:
     Refined
+    Refined.Internal 
     Refined.TH
+    Refined.Unsafe 
   default-language:
     Haskell2010
   build-depends:
