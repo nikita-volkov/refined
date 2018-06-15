@@ -278,6 +278,8 @@ refineError = refine .> either MonadError.throwError pure
 --   If it's not evident, the example above indicates a compile-time failure,
 --   which means that the checking was done at compile-time, thus introducing a
 --   zero runtime overhead compared to a plain value construction.
+--
+--   It may be useful to use this function with the `th-lift-instances` package at https://hackage.haskell.org/package/th-lift-instances/
 refineTH :: (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
 refineTH = let refineByResult :: (Predicate p x)
                               => TH.Q (TH.TExp (Refined p x))
