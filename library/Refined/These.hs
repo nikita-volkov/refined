@@ -83,6 +83,7 @@ module Refined.These
 
 --------------------------------------------------------------------------------
 
+import Control.DeepSeq (NFData(rnf))
 import Data.Bifoldable (Bifoldable(bifold, bifoldr, bifoldl))
 import Data.Bifunctor  (Bifunctor(bimap, first, second))
 import Data.Data       (Data)
@@ -229,6 +230,11 @@ instance Semigroup a => Monad (These a) where
                         This  b   -> This  (a <> b)
                         That    y -> These a y
                         These b y -> These (a <> b) y
+
+instance (NFData a, NFData b) => NFData (These a b) where
+  rnf (This a) = rnf a
+  rnf (That b) = rnf b
+  rnf (These a b) = rnf a `seq` rnf b
 
 instance Foldable (These a) where
     foldr _ z (This _) = z
