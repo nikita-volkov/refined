@@ -46,13 +46,13 @@ module Refined.Unsafe
 
     -- ** Coercion
   , reallyUnsafeUnderlyingRefined
-  , reallyUnsafeRefinedRefined
+  , reallyUnsafePredEquiv
   ) where
 
 --------------------------------------------------------------------------------
 
 import           Control.Exception            (Exception(displayException))
-import           Data.Coerce                  (Coercible, coerce)
+import           Data.Coerce                  (coerce)
 import           Data.Either                  (either)
 import           Data.Function                (id)
 
@@ -80,12 +80,14 @@ reallyUnsafeRefine :: x -> Refined p x
 reallyUnsafeRefine = coerce
 {-# INLINE reallyUnsafeRefine #-}
 
--- | A coercion between a 'Refined' type and a type coercible with
--- its underlying type.
-reallyUnsafeUnderlyingRefined :: Coercible x y => Coercion x (Refined p y)
+-- | A coercion between a type and any refinement of that type.
+-- See "Data.Type.Coercion" for functions manipulating coercions.
+reallyUnsafeUnderlyingRefined :: Coercion x (Refined p x)
 reallyUnsafeUnderlyingRefined = Coercion
 
--- | A coercion between two 'Refined' types. This may be more convenient
--- than 'reallyUnsafeUnderlyingRefined' in some cases.
-reallyUnsafeRefinedRefined :: Coercible x y => Coercion (Refined p x) (Refined q y)
-reallyUnsafeRefinedRefined = Coercion
+-- | A coercion between two 'Refined' types, magicking up the claim
+-- that one predicate is entirely equivalent to another.
+reallyUnsafePredEquiv :: Coercion (Refined p x) (Refined q x)
+reallyUnsafePredEquiv = Coercion
+-- Note: reallyUnsafePredEquiv =
+-- sym 'reallyUnsafeUnderlyingRefined' `trans` 'reallyUnsafeUnderlyingRefined'
