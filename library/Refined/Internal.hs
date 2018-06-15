@@ -160,7 +160,6 @@ import           Data.Monoid                  (mconcat)
 import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
 import           Data.Proxy                   (Proxy (Proxy))
 import           Data.Semigroup               (Semigroup((<>)))
-import           Data.These                   (These(..))
 import           Data.Typeable                (TypeRep, Typeable, typeOf)
 import           Data.Void                    (Void)
 import           Text.Read                    (Read (readsPrec), lex, readParen)
@@ -181,8 +180,9 @@ import           GHC.Exts                     (IsList(Item, toList))
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
-import qualified Data.Text.Prettyprint.Doc    as PP
+import           Refined.These                (These(This,That,These))
 
+import qualified Data.Text.Prettyprint.Doc    as PP
 import qualified Language.Haskell.TH.Syntax   as TH
 
 --------------------------------------------------------------------------------

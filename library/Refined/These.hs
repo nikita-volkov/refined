@@ -31,15 +31,25 @@
 
 --------------------------------------------------------------------------------
 
--- | This module exports the 'Refined' type with its
---   constructor. This is very risky! In particular, the 'Coercible'
---   instances will be visible throughout the importing module.
---   It is usually better to build the necessary coercions locally
---   using the utilities in "Refined.Unsafe", but in some cases
---   it may be more convenient to write a separate module that
---   imports this one and exports some large coercion.
-module Refined.Unsafe.Type
-  ( Refined(Refined)
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+
+--------------------------------------------------------------------------------
+
+module Refined.These
+  ( These(This, That, These)
   ) where
 
-import Refined.Internal (Refined(Refined))
+--------------------------------------------------------------------------------
+
+import Data.Data     (Data)
+import Data.Typeable (Typeable)
+import GHC.Generics  (Generic)
+
+-- | This is defined internally to avoid using the 'these'
+--   package, which brings in a lot of very heavy and unnecessary 
+--   transitive dependencies. We export the type and constructors
+--   here, in case a user should need it.
+data These a b = This a | That b | These a b
+  deriving (Eq, Ord, Read, Show, Typeable, Data, Generic)
+

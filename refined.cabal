@@ -46,7 +46,8 @@ library
     library
   exposed-modules:
     Refined
-    Refined.Internal 
+    Refined.Internal
+    Refined.These
     Refined.TH
     Refined.Unsafe 
     Refined.Unsafe.Type
@@ -59,5 +60,4 @@ library
     , mtl >= 2.2.1
     , prettyprinter >= 1.1.0.1
     , template-haskell >= 2.9 && < 3.0
-    , these >= 0.7.4
     , transformers >= 0.5.0.0
