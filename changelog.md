@@ -4,10 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## [0.2.4.0] - 2018-06-15
+## [0.3.0.0] - TBA
 ### Added
 - Internal module, and Unsafe modules, making sure to take care w.r.t.
   the scope of coercions related to the use of the 'Refined' constructor.
+- 'IdPred' predicate, predicate that never fails.
+- Generic instances for all predicates.
 ### Changed
 - Type role of Refined from 'phantom Representational' to 'nominal nominal'.
   With the old type role, one can use `coerce` to prove `Q x` given any `P x`.
@@ -16,6 +18,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
   Thanks to David Feuer for pointing this out.
 - Change docs to point users to 'Refined.Unsafe' module instead of recommending
   'Unsafe.Coerce.unsafeCoerce'.
+- 'Ascending' and 'Descending' predicates now use 'Foldable' instead of 'IsList'.
 ### Removed
 - Dependency of the 'these' package. It brings in some very
   heavy transitive dependencies, even though the datatype

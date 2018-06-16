@@ -84,6 +84,9 @@ module Refined.Internal
   , Or
   , type (||)
 
+    -- * Identity predicate
+  , IdPred
+
     -- * Numeric predicates
   , LessThan
   , GreaterThan
@@ -145,17 +148,16 @@ import           Prelude
 import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
 import           Control.Monad                (Monad, unless, when)
-import           Data.Bool                    ((&&))
+import           Data.Bool                    (Bool(True,False),(&&), otherwise)
 import           Data.Coerce                  (coerce)
 import           Data.Either
                  (Either (Left, Right), either, isRight)
 import           Data.Eq                      (Eq, (==), (/=))
-import           Data.Foldable                (Foldable(length))
-import           Data.Function                (const, flip, ($))
+import           Data.Foldable                (Foldable(length, foldl'))
+import           Data.Function                (const, flip, ($), (.))
 import           Data.Functor                 (Functor, fmap)
 import           Data.Functor.Identity        (Identity (runIdentity))
 import           Data.List                    ((++))
-import qualified Data.List                    as List
 import           Data.Monoid                  (mconcat)
 import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
 import           Data.Proxy                   (Proxy (Proxy))
@@ -176,7 +178,6 @@ import           Control.Monad.Trans.Class    (MonadTrans (lift))
 import           Control.Monad.Trans.Except   (ExceptT)
 import qualified Control.Monad.Trans.Except   as ExceptT
 
-import           GHC.Exts                     (IsList(Item, toList))
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
@@ -199,6 +200,39 @@ infixl 9 .>
 (.>) :: (a -> b) -> (b -> c) -> a -> c
 f .> g = \x -> g (f x)
 {-# INLINE (.>) #-}
+
+-- | FIXME: doc
+data Ordered a = Empty | Decreasing a | Increasing a
+
+-- | FIXME: doc
+inc :: Ordered a -> Bool
+inc (Decreasing _) = False
+inc _              = True
+{-# INLINE inc #-}
+
+-- | FIXME: doc
+dec :: Ordered a -> Bool
+dec (Increasing _) = False
+dec _              = True
+{-# INLINE dec #-}
+
+increasing :: (Foldable t, Ord a) => t a -> Bool
+increasing = inc . foldl' go Empty where
+  go Empty y = Increasing y
+  go (Decreasing x) _ = Decreasing x
+  go (Increasing x) y
+    | x <= y = Increasing y
+    | otherwise = Decreasing y
+{-# INLINABLE increasing #-}
+
+decreasing :: (Foldable t, Ord a) => t a -> Bool
+decreasing = dec . foldl' go Empty where
+  go Empty y = Decreasing y
+  go (Increasing x) _ = Increasing x
+  go (Decreasing x) y
+    | x >= y = Decreasing y
+    | otherwise = Increasing y
+{-# INLINABLE decreasing #-}
 
 --------------------------------------------------------------------------------
 
@@ -309,8 +343,17 @@ class (Typeable p) => Predicate p x where
 
 --------------------------------------------------------------------------------
 
+data IdPred
+  deriving (Generic)
+
+instance Predicate IdPred x where
+  validate _ _ = pure ()
+
+--------------------------------------------------------------------------------
+
 -- | The negation of a predicate.
 data Not p
+  deriving (Generic, Generic1)
 
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
   validate p x = do
@@ -322,6 +365,7 @@ instance (Predicate p x, Typeable p) => Predicate (Not p) x where
 
 -- | The conjunction of two predicates.
 data And l r
+  deriving (Generic, Generic1)
 
 infixr 3 &&
 -- | The conjunction of two predicates.
@@ -343,6 +387,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 
 -- | The disjunction of two predicates.
 data Or l r
+  deriving (Generic, Generic1)
 
 infixr 2 ||
 -- | The disjunction of two predicates.
@@ -362,6 +407,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is less than the specified type-level number.
 data SizeLessThan (n :: Nat)
+  deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
   validate p x = do
@@ -377,6 +423,7 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is greater than the specified type-level number.
 data SizeGreaterThan (n :: Nat)
+  deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
   validate p x = do
@@ -392,6 +439,7 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is equal to the specified type-level number.
 data SizeEqualTo (n :: Nat)
+  deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
   validate p x = do
@@ -404,35 +452,36 @@ instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
 
 --------------------------------------------------------------------------------
 
--- | A 'Predicate' ensuring that the 'IsList' contains elements
+-- | A 'Predicate' ensuring that the 'Foldable' contains elements
 -- in a strictly ascending order.
 data Ascending
+  deriving (Generic)
 
-instance (IsList t, Ord (Item t)) => Predicate Ascending t where
+instance (Foldable t, Ord a) => Predicate Ascending (t a) where
   validate p x = do
-    let asList = toList x
-    unless (List.sort asList == asList) $ do
+    unless (increasing x) $ do
       throwRefineOtherException (typeOf p)
-        $ "IsList is not in ascending order "
+        $ "Foldable is not in ascending order "
 
 --------------------------------------------------------------------------------
 
--- | A 'Predicate' ensuring that the 'IsList' contains elements
+-- | A 'Predicate' ensuring that the 'Foldable' contains elements
 -- in a strictly descending order.
 data Descending
+  deriving (Generic)
 
-instance (IsList t, Ord (Item t)) => Predicate Descending t where
+instance (Foldable t, Ord a) => Predicate Descending (t a) where
   validate p x = do
-    let asList = toList x
-    unless (List.reverse (List.sort asList) == asList) $ do
+    unless (decreasing x) $ do
       throwRefineOtherException (typeOf p)
-        $ "IsList is not in ascending order "
+        $ "Foldable is not in descending order "
 
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is less than the
 --   specified type-level number.
 data LessThan (n :: Nat)
+  deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
   validate p x = do
@@ -446,6 +495,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
 -- | A 'Predicate' ensuring that the value is greater than the
 --   specified type-level number.
 data GreaterThan (n :: Nat)
+  deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
   validate p x = do
@@ -459,6 +509,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
 -- | A 'Predicate' ensuring that the value is greater than or equal to the
 --   specified type-level number.
 data From (n :: Nat)
+  deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
   validate p x = do
@@ -472,6 +523,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
 -- | A 'Predicate' ensuring that the value is less than or equal to the
 --   specified type-level number.
 data To (n :: Nat)
+  deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
   validate p x = do
@@ -484,6 +536,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
 
 -- | A 'Predicate' ensuring that the value is within an inclusive range.
 data FromTo (mn :: Nat) (mx :: Nat)
+  deriving (Generic)
 
 instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
          ) => Predicate (FromTo mn mx) x where
@@ -504,6 +557,7 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
 -- | A 'Predicate' ensuring that the value is equal to the specified
 --   type-level number @n@.
 data EqualTo (n :: Nat)
+  deriving (Generic)
 
 instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
@@ -517,6 +571,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
 -- | A 'Predicate' ensuring that the value is not equal to the specified
 --   type-level number @n@.
 data NotEqualTo (n :: Nat)
+  deriving (Generic)
 
 instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do

@@ -76,6 +76,9 @@ module Refined
   , Or
   , type (||)
 
+    -- * Identity predicate
+  , IdPred
+
     -- * Numeric predicates
   , LessThan
   , GreaterThan
