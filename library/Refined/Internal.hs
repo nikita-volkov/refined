@@ -30,6 +30,8 @@
 {-# OPTIONS_GHC -Wall                        #-}
 {-# OPTIONS_GHC -funbox-strict-fields        #-}
 
+--------------------------------------------------------------------------------
+
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveGeneric              #-}
