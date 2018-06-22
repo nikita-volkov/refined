@@ -31,6 +31,7 @@
 
 --------------------------------------------------------------------------------
 
+{-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE InstanceSigs       #-}
@@ -84,8 +85,12 @@ module Refined.These
 --------------------------------------------------------------------------------
 
 import Control.DeepSeq (NFData(rnf))
+#if MIN_VERSION_base(4,10,0)
 import Data.Bifoldable (Bifoldable(bifold, bifoldr, bifoldl))
+#endif
+#if MIN_VERSION_base(4,8,0)
 import Data.Bifunctor  (Bifunctor(bimap, first, second))
+#endif
 import Data.Data       (Data)
 import Data.Maybe      (isJust, mapMaybe)
 import Data.Semigroup  (Semigroup((<>)))
@@ -197,6 +202,7 @@ instance (Semigroup a, Semigroup b) => Semigroup (These a b) where
     These a x <> That    y = These  a       (x <> y)
     These a x <> These b y = These (a <> b) (x <> y)
 
+#if MIN_VERSION_base(4,8,0)
 instance Bifunctor These where
   bimap :: (a -> c) -> (b -> d) -> These a b -> These c d 
   bimap f _ (This a   ) = This  (f a)
@@ -206,6 +212,7 @@ instance Bifunctor These where
   first f = bimap f id
   second :: (b -> d) -> These a b -> These a d
   second f = bimap id f
+#endif
 
 instance Functor (These a) where
     fmap _ (This x) = This x
@@ -249,8 +256,9 @@ instance Traversable (These a) where
     sequenceA (That    x) = That <$> x
     sequenceA (These a x) = These a <$> x
 
+#if MIN_VERSION_base(4,10,0)
 instance Bifoldable These where
     bifold = these id id mappend
     bifoldr f g z = these (`f` z) (`g` z) (\x y -> x `f` (y `g` z))
     bifoldl f g z = these (z `f`) (z `g`) (\x y -> (z `f` x) `g` y)
-
+#endif
