@@ -19,6 +19,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - Change docs to point users to 'Refined.Unsafe' module instead of recommending
   'Unsafe.Coerce.unsafeCoerce'.
 - 'Ascending' and 'Descending' predicates now use 'Foldable' instead of 'IsList'.
+- Lowered the lower bound on 'exceptions'; it was too strict for the support window.
 ### Removed
 - Dependency of the 'these' package. It brings in some very
   heavy transitive dependencies, even though the datatype
