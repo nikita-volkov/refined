@@ -27,6 +27,11 @@
 
 --------------------------------------------------------------------------------
 
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 805
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
+#endif
 {-# OPTIONS_GHC -Wall #-}
 
 --------------------------------------------------------------------------------
@@ -46,6 +51,9 @@ module Refined.Unsafe
 
     -- ** Coercion
   , reallyUnsafeUnderlyingRefined
+#if __GLASGOW_HASKELL__ >= 805
+  , reallyUnsafeAllUnderlyingRefined
+#endif
   , reallyUnsafePredEquiv
   ) where
 
@@ -60,6 +68,9 @@ import           GHC.Err                      (error)
 
 import           Refined.Internal             (Refined(Refined), Predicate, refine, (.>))
 import           Data.Type.Coercion           (Coercion (..))
+#if __GLASGOW_HASKELL__ >= 805
+import           Data.Coerce                  (Coercible)
+#endif
 
 --------------------------------------------------------------------------------
 
@@ -91,3 +102,28 @@ reallyUnsafePredEquiv :: Coercion (Refined p x) (Refined q x)
 reallyUnsafePredEquiv = Coercion
 -- Note: reallyUnsafePredEquiv =
 -- sym 'reallyUnsafeUnderlyingRefined' `trans` 'reallyUnsafeUnderlyingRefined'
+
+#if __GLASGOW_HASKELL__ >= 805
+-- | Reveal that @x@ and @'Refined' p x@ are 'Coercible' for
+-- /all/ @x@ and @p@ simultaneously. The constraint solver is
+-- fussier than usual in the argument to this function, so
+-- it may be necessary to give GHC extra guidance. For example,
+--
+-- @
+-- reallyUnsafePredEquiv :: 'Coercion' ('Refined' p x) ('Refined' q x)
+-- reallyUnsafePredEquiv = reallyUnsafeAllUnderlyingRefined Coercion
+-- @
+--
+-- does not work, but
+--
+-- @
+-- reallyUnsafePredEquiv :: forall p q x. 'Coercion' ('Refined' p x) ('Refined' q x)
+-- reallyUnsafePredEquiv = reallyUnsafeAllUnderlyingRefined $
+--   coerce (Coercion @(Refined _ _) @x)
+-- @
+--
+-- works just fine.
+reallyUnsafeAllUnderlyingRefined
+  :: ((forall x p. (Coercible x (Refined p x))) => r) -> r
+reallyUnsafeAllUnderlyingRefined r = r
+#endif
