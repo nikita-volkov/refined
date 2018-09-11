@@ -105,25 +105,18 @@ reallyUnsafePredEquiv = Coercion
 
 #if __GLASGOW_HASKELL__ >= 805
 -- | Reveal that @x@ and @'Refined' p x@ are 'Coercible' for
--- /all/ @x@ and @p@ simultaneously. The constraint solver is
--- fussier than usual in the argument to this function, so
--- it may be necessary to give GHC extra guidance. For example,
+-- /all/ @x@ and @p@ simultaneously.
+--
+-- === Example
 --
 -- @
--- reallyUnsafePredEquiv :: 'Coercion' ('Refined' p x) ('Refined' q x)
+-- reallyUnsafePredEquiv :: Coercion (Refined p x) (Refined q x)
 -- reallyUnsafePredEquiv = reallyUnsafeAllUnderlyingRefined Coercion
 -- @
---
--- does not work, but
---
--- @
--- reallyUnsafePredEquiv :: forall p q x. 'Coercion' ('Refined' p x) ('Refined' q x)
--- reallyUnsafePredEquiv = reallyUnsafeAllUnderlyingRefined $
---   coerce (Coercion @(Refined _ _) @x)
--- @
---
--- works just fine.
 reallyUnsafeAllUnderlyingRefined
-  :: ((forall x p. (Coercible x (Refined p x))) => r) -> r
+  :: ((forall x y p. (Coercible x y => Coercible y (Refined p x))) => r) -> r
+-- Why is this constraint so convoluted? Because otherwise the constraint
+-- solver doesn't handle transitivity properly. See "Safe Zero-cost Coercions
+-- for Haskell" by Breitner et al.
 reallyUnsafeAllUnderlyingRefined r = r
 #endif
