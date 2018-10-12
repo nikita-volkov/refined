@@ -345,6 +345,7 @@ class (Typeable p) => Predicate p x where
 
 --------------------------------------------------------------------------------
 
+-- | A predicate which is satisfied for all types.
 data IdPred
   deriving (Generic)
 

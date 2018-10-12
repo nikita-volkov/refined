@@ -27,6 +27,11 @@
 
 --------------------------------------------------------------------------------
 
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 805
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
+#endif
 {-# OPTIONS_GHC -Wall #-}
 
 --------------------------------------------------------------------------------
@@ -46,6 +51,9 @@ module Refined.Unsafe
 
     -- ** Coercion
   , reallyUnsafeUnderlyingRefined
+#if __GLASGOW_HASKELL__ >= 805
+  , reallyUnsafeAllUnderlyingRefined
+#endif
   , reallyUnsafePredEquiv
   ) where
 
@@ -60,6 +68,9 @@ import           GHC.Err                      (error)
 
 import           Refined.Internal             (Refined(Refined), Predicate, refine, (.>))
 import           Data.Type.Coercion           (Coercion (..))
+#if __GLASGOW_HASKELL__ >= 805
+import           Data.Coerce                  (Coercible)
+#endif
 
 --------------------------------------------------------------------------------
 
@@ -91,3 +102,21 @@ reallyUnsafePredEquiv :: Coercion (Refined p x) (Refined q x)
 reallyUnsafePredEquiv = Coercion
 -- Note: reallyUnsafePredEquiv =
 -- sym 'reallyUnsafeUnderlyingRefined' `trans` 'reallyUnsafeUnderlyingRefined'
+
+#if __GLASGOW_HASKELL__ >= 805
+-- | Reveal that @x@ and @'Refined' p x@ are 'Coercible' for
+-- /all/ @x@ and @p@ simultaneously.
+--
+-- === Example
+--
+-- @
+-- reallyUnsafePredEquiv :: Coercion (Refined p x) (Refined q x)
+-- reallyUnsafePredEquiv = reallyUnsafeAllUnderlyingRefined Coercion
+-- @
+reallyUnsafeAllUnderlyingRefined
+  :: ((forall x y p. (Coercible x y => Coercible y (Refined p x))) => r) -> r
+-- Why is this constraint so convoluted? Because otherwise the constraint
+-- solver doesn't handle transitivity properly. See "Safe Zero-cost Coercions
+-- for Haskell" by Breitner et al.
+reallyUnsafeAllUnderlyingRefined r = r
+#endif
