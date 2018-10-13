@@ -103,6 +103,7 @@ module Refined.Internal
   , NonNegative
   , ZeroToOne
   , NonZero
+  , NegativeFromTo
 
     -- * Foldable predicates
   , SizeLessThan
@@ -145,7 +146,7 @@ module Refined.Internal
 --------------------------------------------------------------------------------
 
 import           Prelude
-                 (Num, fromIntegral, undefined)
+                 (Num, fromIntegral, negate, undefined)
 
 import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
@@ -583,6 +584,29 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
       throwRefineOtherException (typeOf p)
         $ "Value does equal " <> PP.pretty x'
 
+--------------------------------------------------------------------------------
+
+-- | A 'Predicate' ensuring that the value is greater or equal than a negative
+--   number specified as a type-level (positive) number @n@ and less than a
+--   type-level (positive) number @m@.
+data NegativeFromTo (n :: Nat) (m :: Nat)
+  deriving (Generic)
+
+instance (Ord x, Num x, KnownNat n, KnownNat m, n <= m)
+  => Predicate (NegativeFromTo n m) x where
+
+  validate p x = do
+    let n' = natVal (Proxy @n)
+        m' = natVal (Proxy @m)
+    unless (x >= negate (fromIntegral n') && x <= fromIntegral m') $ do
+      let msg = mconcat
+                [ "Value is out of range (minimum: "
+                , PP.pretty (negate n')
+                , ", maximum: "
+                , PP.pretty m'
+                , ")"
+                ]
+      throwRefineOtherException (typeOf p) msg
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is greater than zero.
