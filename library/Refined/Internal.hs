@@ -39,6 +39,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
@@ -160,7 +161,6 @@ import           Data.Foldable                (Foldable(length, foldl'))
 import           Data.Function                (const, flip, ($), (.))
 import           Data.Functor                 (Functor, fmap)
 import           Data.Functor.Identity        (Identity (runIdentity))
-import           Data.List                    ((++))
 import           Data.Monoid                  (mconcat)
 import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
 import           Data.Proxy                   (Proxy (Proxy))
@@ -746,25 +746,63 @@ data RefineException
 instance Show RefineException where
   show = PP.pretty .> show
 
+twoSpaces, newline :: PP.Doc ann
+{-# INLINE twoSpaces #-}
+{-# INLINE newline   #-}
+twoSpaces = "  "
+newline = "\n"
+
 -- | Display a 'RefineException' as a @'PP.Doc' ann@
 displayRefineException :: RefineException -> PP.Doc ann
-displayRefineException (RefineOtherException tr msg)
-  = PP.pretty ("The predicate (" ++ show tr ++ ") does not hold: \n \t" ++ show msg)
-displayRefineException (RefineNotException tr notChild)
-  = PP.pretty ("The negation of the predicate (" ++ show tr ++ ") does not hold. \n")
-      <> "\t" <> (displayRefineException notChild) <> "\n"
-displayRefineException (RefineOrException tr orLChild orRChild)
-  = PP.pretty ("Both subpredicates failed in: (" ++ show tr ++ "). \n")
-      <> "\t" <> (displayRefineException orLChild) <> "\n"
-      <> "\t" <> (displayRefineException orRChild) <> "\n"
-displayRefineException (RefineAndException tr andChild)
-  = PP.pretty ("The predicate (" ++ show tr ++ ") does not hold: \n \t")
-      <> case andChild of
-           This a -> "The left subpredicate does not hold:\n\t" <> displayRefineException a <> "\n"
-           That b -> "The right subpredicate does not hold:\n\t" <> displayRefineException b <> "\n"
-           These a b -> "\t Neither subpredicate holds: \n"
-             <> "\t" <> displayRefineException a <> "\n"
-             <> "\t" <> displayRefineException b <> "\n"
+displayRefineException = \case
+  RefineOtherException tr msg ->
+    mconcat
+      [ "The predicate ("
+      , PP.pretty (show tr)
+      , ") does not hold: "
+      , newline
+      , twoSpaces
+      , PP.pretty (show msg)
+      ]
+  RefineNotException tr notChild ->
+    mconcat
+      [ "The negation of the predicate ("
+      , PP.pretty (show tr)
+      , ") does not hold:"
+      , newline
+      , twoSpaces
+      , displayRefineException notChild
+      , newline
+      ]
+  RefineOrException tr orLChild orRChild ->
+    mconcat
+      [ "Both subpredicates failed in: ("
+      , PP.pretty (show tr)
+      , "):"
+      , newline
+      , twoSpaces
+      , displayRefineException orLChild
+      , newline
+      , twoSpaces
+      , displayRefineException orRChild
+      , newline
+      , twoSpaces
+      ]
+  RefineAndException tr andChild ->
+    mconcat
+      [ "The predicate ("
+      , PP.pretty (show tr)
+      , ") does not hold:"
+      , newline
+      , twoSpaces
+      ]
+    <> case andChild of
+         This a -> mconcat [ "The left subpredicate does not hold:", newline, twoSpaces, displayRefineException a, newline ]
+         That b -> mconcat [ "The right subpredicate does not hold:", newline, twoSpaces, displayRefineException b, newline ]
+         These a b -> mconcat [ twoSpaces, "Neither subpredicate holds: ", newline
+                              , twoSpaces, displayRefineException a, newline
+                              , twoSpaces, displayRefineException b, newline
+                              ]
 
 -- | Pretty-print a 'RefineException'.
 instance PP.Pretty RefineException where

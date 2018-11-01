@@ -11,6 +11,8 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
   Thanks to github.com/futtetennista for this change.
 ### Changed
 - `RefinedNotException` now has a child (it should have had one in v2. This was an oversight.)
+- `displayRefineException` no longer uses tabs, instead 2 spaces.
+- make implementation of `displayRefineException` more clear via formatting.
 
 ## [0.3.0.0] - 2018-09-26
 ### Added
