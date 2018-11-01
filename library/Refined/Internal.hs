@@ -150,11 +150,11 @@ import           Prelude
 
 import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
-import           Control.Monad                (Monad, unless, when)
+import           Control.Monad                (Monad, unless)
 import           Data.Bool                    (Bool(True,False),(&&), otherwise)
 import           Data.Coerce                  (coerce)
 import           Data.Either
-                 (Either (Left, Right), either, isRight)
+                 (Either (Left, Right), either)
 import           Data.Eq                      (Eq, (==), (/=))
 import           Data.Foldable                (Foldable(length, foldl'))
 import           Data.Function                (const, flip, ($), (.))
@@ -318,14 +318,15 @@ refineError = refine .> either MonadError.throwError pure
 --
 --   It may be useful to use this function with the `th-lift-instances` package at https://hackage.haskell.org/package/th-lift-instances/
 refineTH :: (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
-refineTH = let refineByResult :: (Predicate p x)
-                              => TH.Q (TH.TExp (Refined p x))
-                              -> x
-                              -> Either RefineException (Refined p x)
-               refineByResult = const refine
-           in fix $ \loop -> refineByResult (loop undefined)
-                             .> either (show .> fail) TH.lift
-                             .> fmap TH.TExp
+refineTH =
+  let refineByResult :: (Predicate p x)
+        => TH.Q (TH.TExp (Refined p x))
+        -> x
+        -> Either RefineException (Refined p x)
+      refineByResult = const refine
+  in fix $ \loop -> refineByResult (loop undefined)
+                    .> either (show .> fail) TH.lift
+                    .> fmap TH.TExp
 
 --------------------------------------------------------------------------------
 
@@ -362,8 +363,9 @@ data Not p
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
   validate p x = do
     result <- runRefineT (validate @p undefined x)
-    when (isRight result) $ do
-      throwRefine (RefineNotException (typeOf p))
+    case result of
+      Left r -> throwRefine (RefineNotException (typeOf p) r)
+      Right () -> pure ()
 
 --------------------------------------------------------------------------------
 
@@ -704,6 +706,8 @@ data RefineException
     RefineNotException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'Not' p@ type.
+    , _RefineException_notChild  :: !RefineException
+      -- ^ The 'RefineException' for the @p@ failure.
     }
 
   | -- | A 'RefineException' for failures involving the 'And' predicate.
@@ -746,8 +750,9 @@ instance Show RefineException where
 displayRefineException :: RefineException -> PP.Doc ann
 displayRefineException (RefineOtherException tr msg)
   = PP.pretty ("The predicate (" ++ show tr ++ ") does not hold: \n \t" ++ show msg)
-displayRefineException (RefineNotException tr)
-  = PP.pretty ("The negation of the predicate (" ++ show tr ++ ") does not hold.")
+displayRefineException (RefineNotException tr notChild)
+  = PP.pretty ("The negation of the predicate (" ++ show tr ++ ") does not hold. \n")
+      <> "\t" <> (displayRefineException notChild) <> "\n"
 displayRefineException (RefineOrException tr orLChild orRChild)
   = PP.pretty ("Both subpredicates failed in: (" ++ show tr ++ "). \n")
       <> "\t" <> (displayRefineException orLChild) <> "\n"
