@@ -4,12 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## [0.3.0.0] - TBA
+## [0.4.0.0] - TBA
+### Added
+- 'NegativeFromTo', a Predicate that ensures a numeric value is within a range [a,b],
+  where a < 0 and b >= a.
+  Thanks to github.com/futtetennista for this change.
+### Changed
+- `RefinedNotException` now has a child (it should have had one in v2. This was an oversight.)
+
+## [0.3.0.0] - 2018-09-26
 ### Added
 - Internal module, and Unsafe modules, making sure to take care w.r.t.
   the scope of coercions related to the use of the 'Refined' constructor.
 - 'IdPred' predicate, predicate that never fails.
 - Generic instances for all predicates.
+- `reallyUnsafeRefine`, `reallyUnsafeUnderlyingRefined`, `reallyUnsafeAllUnderlyingRefined`,
+  functions that allow one to use 'Coercion's to manually prove things about 'Refined'
+  values.
 ### Changed
 - Type role of Refined from 'phantom Representational' to 'nominal nominal'.
   With the old type role, one can use `coerce` to prove `Q x` given any `P x`.
