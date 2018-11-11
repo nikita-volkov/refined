@@ -35,6 +35,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE ExplicitNamespaces         #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -353,6 +354,7 @@ data IdPred
 
 instance Predicate IdPred x where
   validate _ _ = pure ()
+  {-# INLINE validate #-}
 
 --------------------------------------------------------------------------------
 
@@ -421,8 +423,14 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
         sz = length x
     unless (sz < fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
-        $ "Size of Foldable is not less than " <> PP.pretty x' <> "\n"
-        <> "\tSize is: " <> PP.pretty sz
+        ( [ "Size of Foldable is not less than "
+          , PP.pretty x'
+          , newline
+          , twoSpaces
+          , "Size is: "
+          , PP.pretty sz
+          ] |> mconcat
+        )
 
 --------------------------------------------------------------------------------
 
@@ -437,8 +445,14 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
         sz = length x
     unless (sz > fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
-        $ "Size of Foldable is not greater than " <> PP.pretty x' <> "\n"
-        <> "\tSize is: " <> PP.pretty sz
+        ( [ "Size of Foldable is not greater than "
+          , PP.pretty x'
+          , newline
+          , twoSpaces
+          , "Size is: "
+          , PP.pretty sz
+          ] |> mconcat
+        )
 
 --------------------------------------------------------------------------------
 
@@ -453,8 +467,14 @@ instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
         sz = length x
     unless (sz == fromIntegral x') $ do
       throwRefineOtherException (typeOf p)
-        $ "Size of Foldable is not equal to " <> PP.pretty x' <> "\n"
-        <> "\tSize is: " <> PP.pretty sz
+        ( [ "Size of Foldable is not equal to "
+          , PP.pretty x'
+          , newline
+          , twoSpaces
+          , "Size is: "
+          , PP.pretty sz
+          ] |> mconcat
+        )
 
 --------------------------------------------------------------------------------
 
@@ -466,8 +486,7 @@ data Ascending
 instance (Foldable t, Ord a) => Predicate Ascending (t a) where
   validate p x = do
     unless (increasing x) $ do
-      throwRefineOtherException (typeOf p)
-        $ "Foldable is not in ascending order "
+      throwRefineOtherException (typeOf p) ( "Foldable is not in ascending order." )
 
 --------------------------------------------------------------------------------
 
@@ -479,8 +498,7 @@ data Descending
 instance (Foldable t, Ord a) => Predicate Descending (t a) where
   validate p x = do
     unless (decreasing x) $ do
-      throwRefineOtherException (typeOf p)
-        $ "Foldable is not in descending order "
+      throwRefineOtherException (typeOf p) ( "Foldable is not in descending order." )
 
 --------------------------------------------------------------------------------
 
@@ -493,8 +511,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
   validate p x = do
     let x' = natVal p
     unless (x < fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        $ "Value is not less than " <> PP.pretty x'
+      throwRefineOtherException (typeOf p) ( "Value is not less than " <> PP.pretty x' )
 
 --------------------------------------------------------------------------------
 
@@ -507,8 +524,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
   validate p x = do
     let x' = natVal p
     unless (x > fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        $ "Value is not greater than " <> PP.pretty x'
+      throwRefineOtherException (typeOf p) ( "Value is not greater than " <> PP.pretty x' )
 
 --------------------------------------------------------------------------------
 
@@ -521,8 +537,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
   validate p x = do
     let x' = natVal p
     unless (x >= fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        $ "Value is less than " <> PP.pretty x'
+      throwRefineOtherException (typeOf p) ( "Value is less than " <> PP.pretty x' )
 
 --------------------------------------------------------------------------------
 
@@ -535,8 +550,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
   validate p x = do
     let x' = natVal p
     unless (x <= fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        $ "Value is greater than " <> PP.pretty x'
+      throwRefineOtherException (typeOf p) ( "Value is greater than " <> PP.pretty x' )
 
 --------------------------------------------------------------------------------
 
@@ -569,8 +583,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
     let x' = natVal p
     unless (x == fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        $ "Value does not equal " <> PP.pretty x'
+      throwRefineOtherException (typeOf p) ( "Value does not equal " <> PP.pretty x' )
 
 --------------------------------------------------------------------------------
 
@@ -583,8 +596,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do
     let x' = natVal p
     unless (x /= fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        $ "Value does equal " <> PP.pretty x'
+      throwRefineOtherException (typeOf p) ( "Value does equal " <> PP.pretty x' )
 
 --------------------------------------------------------------------------------
 
@@ -594,21 +606,19 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
 data NegativeFromTo (n :: Nat) (m :: Nat)
   deriving (Generic)
 
-instance (Ord x, Num x, KnownNat n, KnownNat m, n <= m)
-  => Predicate (NegativeFromTo n m) x where
-
+instance (Ord x, Num x, KnownNat n, KnownNat m, n <= m) => Predicate (NegativeFromTo n m) x where
   validate p x = do
     let n' = natVal (Proxy @n)
         m' = natVal (Proxy @m)
     unless (x >= negate (fromIntegral n') && x <= fromIntegral m') $ do
-      let msg = mconcat
-                [ "Value is out of range (minimum: "
+      let msg = [ "Value is out of range (minimum: "
                 , PP.pretty (negate n')
                 , ", maximum: "
                 , PP.pretty m'
                 , ")"
-                ]
+                ] |> mconcat
       throwRefineOtherException (typeOf p) msg
+
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is greater than zero.
@@ -756,46 +766,44 @@ newline = "\n"
 displayRefineException :: RefineException -> PP.Doc ann
 displayRefineException = \case
   RefineOtherException tr msg ->
-    mconcat
-      [ "The predicate ("
-      , PP.pretty (show tr)
-      , ") does not hold: "
-      , newline
-      , twoSpaces
-      , PP.pretty (show msg)
-      ]
+    [ "The predicate ("
+    , PP.pretty (show tr)
+    , ") does not hold: "
+    , newline
+    , twoSpaces
+    , PP.pretty (show msg)
+    ] |> mconcat
   RefineNotException tr notChild ->
-    mconcat
-      [ "The negation of the predicate ("
-      , PP.pretty (show tr)
-      , ") does not hold:"
-      , newline
-      , twoSpaces
-      , displayRefineException notChild
-      , newline
-      ]
+    [ "The negation of the predicate ("
+    , PP.pretty (show tr)
+    , ") does not hold:"
+    , newline
+    , twoSpaces
+    , displayRefineException notChild
+    , newline
+    ] |> mconcat
   RefineOrException tr orLChild orRChild ->
-    mconcat
-      [ "Both subpredicates failed in: ("
-      , PP.pretty (show tr)
-      , "):"
-      , newline
-      , twoSpaces
-      , displayRefineException orLChild
-      , newline
-      , twoSpaces
-      , displayRefineException orRChild
-      , newline
-      , twoSpaces
-      ]
+    [ "Both subpredicates failed in: ("
+    , PP.pretty (show tr)
+    , "):"
+    , newline
+    , twoSpaces
+    , displayRefineException orLChild
+    , newline
+    , twoSpaces
+    , displayRefineException orRChild
+    , newline
+    , twoSpaces
+    ] |> mconcat
   RefineAndException tr andChild ->
-    mconcat
+    (
       [ "The predicate ("
       , PP.pretty (show tr)
       , ") does not hold:"
       , newline
       , twoSpaces
-      ]
+      ] |> mconcat
+    )
     <> case andChild of
          This a -> mconcat [ "The left subpredicate does not hold:", newline, twoSpaces, displayRefineException a, newline ]
          That b -> mconcat [ "The right subpredicate does not hold:", newline, twoSpaces, displayRefineException b, newline ]
