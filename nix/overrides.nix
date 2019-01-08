@@ -10,7 +10,7 @@ with pkgs.haskell.lib;
   refined = (
     with rec {
       refinedSource = pkgs.lib.cleanSource ../.;
-      refinedBasic = self.callCabal2nix "refined" refinedSource {};
+      refinedBasic  = self.callCabal2nix "refined" refinedSource { };
     };
     overrideCabal refinedBasic (old: {
     })
