@@ -46,7 +46,7 @@ flag aeson
 
 flag QuickCheck
   description:
-    You can disable the use of the `aeson` package using `-f-aeson`.
+    You can disable the use of the `QuickCheck` package using `-f-QuickCheck`.
     .
     This may be useful for accelerating builds in sandboxes for expert users.
   default: True
