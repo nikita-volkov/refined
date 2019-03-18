@@ -32,6 +32,7 @@
 
 --------------------------------------------------------------------------------
 
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -858,7 +859,7 @@ type RefineM a = RefineT Identity a
 refineM
   :: Either RefineException a
   -> RefineM a
-refineM = ExceptT.except .> coerce
+refineM = ExceptT.except .> (coerce :: ExceptT RefineException Identity a -> RefineM a)
 
 -- | Run a monadic action of type @'RefineM' a@,
 --   yielding an @'Either' 'RefineException' a@.

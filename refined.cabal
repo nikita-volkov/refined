@@ -64,9 +64,11 @@ library
   exposed-modules:
     Refined
     Refined.Internal
-    Refined.Orphan 
+    Refined.Orphan
+      Refined.Orphan.Aeson
+      Refined.Orphan.QuickCheck
     Refined.Unsafe 
-    Refined.Unsafe.Type
+      Refined.Unsafe.Type
   default-language:
     Haskell2010
   build-depends:
