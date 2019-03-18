@@ -127,6 +127,9 @@ module Refined
   , RefineM, refineM, runRefineM
   , throwRefine, catchRefine
   , throwRefineOtherException
+
+    -- * Re-Exports
+  , pretty
   ) where
 
 --------------------------------------------------------------------------------
