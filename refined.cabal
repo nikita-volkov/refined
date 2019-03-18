@@ -3,7 +3,7 @@ cabal-version:
 name:
   refined
 version:
-  0.3.0.0
+  0.4
 synopsis:
   Refinement types with static and runtime checking
 description:
@@ -34,7 +34,7 @@ tested-with:
     GHC == 8.0.2
   , GHC == 8.2.2
   , GHC == 8.4.4
-  , GHC == 8.6.3
+  , GHC == 8.6.4
 
 flag aeson
   description:
