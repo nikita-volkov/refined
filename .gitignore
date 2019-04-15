@@ -6,3 +6,5 @@
 *.swa
 *.ps
 result*
+*.un*
+*~

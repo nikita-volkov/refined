@@ -156,11 +156,11 @@ import           Prelude
 
 import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
-import           Control.Monad                (Monad, unless)
+import           Control.Monad                (Monad, unless, when)
 import           Data.Bool                    (Bool(True,False),(&&), otherwise)
 import           Data.Coerce                  (coerce)
 import           Data.Either
-                 (Either (Left, Right), either)
+                 (Either (Left, Right), either, isRight)
 import           Data.Eq                      (Eq, (==), (/=))
 import           Data.Foldable                (Foldable(length, foldl'))
 import           Data.Function                (const, flip, ($), (.))
@@ -369,9 +369,8 @@ data Not p
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
   validate p x = do
     result <- runRefineT (validate @p undefined x)
-    case result of
-      Left r -> throwRefine (RefineNotException (typeOf p) r)
-      Right () -> pure ()
+    when (isRight result) $ do
+      throwRefine (RefineNotException (typeOf p))
 
 --------------------------------------------------------------------------------
 
@@ -720,8 +719,6 @@ data RefineException
     RefineNotException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'Not' p@ type.
-    , _RefineException_notChild  :: !RefineException
-      -- ^ The 'RefineException' for the @p@ failure.
     }
 
   | -- | A 'RefineException' for failures involving the 'And' predicate.
@@ -777,14 +774,12 @@ displayRefineException = \case
     , twoSpaces
     , PP.pretty (show msg)
     ] |> mconcat
-  RefineNotException tr notChild ->
+  RefineNotException tr ->
     [ "The negation of the predicate ("
     , PP.pretty (show tr)
     , ") does not hold:"
     , newline
     , twoSpaces
-    , displayRefineException notChild
-    , newline
     ] |> mconcat
   RefineOrException tr orLChild orRChild ->
     [ "Both subpredicates failed in: ("
