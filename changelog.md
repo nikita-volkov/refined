@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## [0.4.0.0] - TBA
+## [0.4.1.0] - 2019-04-15
+### Fixed
+- Serious regression where `Not p` ~ `p`. Thanks to @k0ral who reported this.
+
+## [0.4.0.0] - 2019-03-18
 ### Added
 - 'NegativeFromTo', a Predicate that ensures a numeric value is within a range [a,b],
   where a < 0 and b >= a.
