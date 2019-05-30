@@ -7,23 +7,23 @@ version:
 synopsis:
   Refinement types with static and runtime checking
 description:
-  For an extensive introduction to the library please follow to 
+  For an extensive introduction to the library please follow to
   <http://nikita-volkov.github.io/refined this blog-post>.
 category:
   Data
 homepage:
   https://github.com/nikita-volkov/refined
 bug-reports:
-  https://github.com/nikita-volkov/refined/issues 
+  https://github.com/nikita-volkov/refined/issues
 author:
   Nikita Volkov <nikita.y.volkov@mail.ru>
 maintainer:
-  chessai <chessai1996@gmail.com> 
+  chessai <chessai1996@gmail.com>
 copyright:
   Copyright © 2015, Nikita Volkov
   Copyright © 2018, Remy Goldschmidt
   Copyright © 2018, Daniel Cartwright
-  
+
 license:
   MIT
 license-file:
@@ -60,15 +60,15 @@ source-repository head
 
 library
   hs-source-dirs:
-    library
+    src
   exposed-modules:
     Refined
     Refined.Internal
     Refined.Orphan
       Refined.Orphan.Aeson
       Refined.Orphan.QuickCheck
-    Refined.These 
-    Refined.Unsafe 
+    Refined.These
+    Refined.Unsafe
       Refined.Unsafe.Type
   default-language:
     Haskell2010
