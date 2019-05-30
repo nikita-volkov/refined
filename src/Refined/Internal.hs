@@ -90,16 +90,16 @@ module Refined.Internal
   , type (||)
 
     -- * Identity predicate
-  , IdPred
+  , IdPred(..)
 
     -- * Numeric predicates
-  , LessThan
-  , GreaterThan
-  , From
-  , To
-  , FromTo
-  , EqualTo
-  , NotEqualTo
+  , LessThan(..)
+  , GreaterThan(..)
+  , From(..)
+  , To(..)
+  , FromTo(..)
+  , EqualTo(..)
+  , NotEqualTo(..)
   , Positive
   , NonPositive
   , Negative
@@ -109,14 +109,14 @@ module Refined.Internal
   , NegativeFromTo
 
     -- * Foldable predicates
-  , SizeLessThan
-  , SizeGreaterThan
-  , SizeEqualTo
+  , SizeLessThan(..)
+  , SizeGreaterThan(..)
+  , SizeEqualTo(..)
   , NonEmpty
 
     -- * IsList predicates
-  , Ascending
-  , Descending
+  , Ascending(..)
+  , Descending(..)
 
     -- * Weakening
   , Weaken (weaken)
@@ -330,8 +330,8 @@ refineTH =
         -> Either RefineException (Refined p x)
       refineByResult = const refine
   in fix $ \loop -> refineByResult (loop undefined)
-                    .> either (show .> fail) TH.lift
-                    .> fmap TH.TExp
+       .> either (show .> fail) TH.lift
+       .> fmap TH.TExp
 
 --------------------------------------------------------------------------------
 
@@ -353,7 +353,7 @@ class (Typeable p) => Predicate p x where
 --------------------------------------------------------------------------------
 
 -- | A predicate which is satisfied for all types.
-data IdPred
+data IdPred = IdPred
   deriving (Generic)
 
 instance Predicate IdPred x where
@@ -417,7 +417,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is less than the specified type-level number.
-data SizeLessThan (n :: Nat)
+data SizeLessThan (n :: Nat) = SizeLessThan
   deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
@@ -439,7 +439,7 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is greater than the specified type-level number.
-data SizeGreaterThan (n :: Nat)
+data SizeGreaterThan (n :: Nat) = SizeGreaterThan
   deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
@@ -461,7 +461,7 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is equal to the specified type-level number.
-data SizeEqualTo (n :: Nat)
+data SizeEqualTo (n :: Nat) = SizeEqualTo
   deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
@@ -483,7 +483,7 @@ instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' contains elements
 -- in a strictly ascending order.
-data Ascending
+data Ascending = Ascending
   deriving (Generic)
 
 instance (Foldable t, Ord a) => Predicate Ascending (t a) where
@@ -495,7 +495,7 @@ instance (Foldable t, Ord a) => Predicate Ascending (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' contains elements
 -- in a strictly descending order.
-data Descending
+data Descending = Descending
   deriving (Generic)
 
 instance (Foldable t, Ord a) => Predicate Descending (t a) where
@@ -507,7 +507,7 @@ instance (Foldable t, Ord a) => Predicate Descending (t a) where
 
 -- | A 'Predicate' ensuring that the value is less than the
 --   specified type-level number.
-data LessThan (n :: Nat)
+data LessThan (n :: Nat) = LessThan
   deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
@@ -520,7 +520,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
 
 -- | A 'Predicate' ensuring that the value is greater than the
 --   specified type-level number.
-data GreaterThan (n :: Nat)
+data GreaterThan (n :: Nat) = GreaterThan
   deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
@@ -533,7 +533,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
 
 -- | A 'Predicate' ensuring that the value is greater than or equal to the
 --   specified type-level number.
-data From (n :: Nat)
+data From (n :: Nat) = From
   deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
@@ -546,7 +546,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
 
 -- | A 'Predicate' ensuring that the value is less than or equal to the
 --   specified type-level number.
-data To (n :: Nat)
+data To (n :: Nat) = To
   deriving (Generic)
 
 instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
@@ -558,7 +558,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is within an inclusive range.
-data FromTo (mn :: Nat) (mx :: Nat)
+data FromTo (mn :: Nat) (mx :: Nat) = FromTo
   deriving (Generic)
 
 instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
@@ -579,7 +579,7 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
 
 -- | A 'Predicate' ensuring that the value is equal to the specified
 --   type-level number @n@.
-data EqualTo (n :: Nat)
+data EqualTo (n :: Nat) = EqualTo
   deriving (Generic)
 
 instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
@@ -592,7 +592,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
 
 -- | A 'Predicate' ensuring that the value is not equal to the specified
 --   type-level number @n@.
-data NotEqualTo (n :: Nat)
+data NotEqualTo (n :: Nat) = NotEqualTo
   deriving (Generic)
 
 instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
