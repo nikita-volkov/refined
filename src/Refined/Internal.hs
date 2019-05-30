@@ -83,10 +83,10 @@ module Refined.Internal
   , Predicate (validate)
 
     -- * Logical predicates
-  , Not
-  , And
+  , Not(..)
+  , And(..)
   , type (&&)
-  , Or
+  , Or(..)
   , type (||)
 
     -- * Identity predicate
@@ -394,7 +394,7 @@ instance Predicate IdPred x where
 --
 --   >>> isLeft (refine @(Not NonEmpty) @[Int] [1,2])
 --   True
-data Not p
+data Not p = Not
   deriving (Generic, Generic1)
 
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
@@ -412,7 +412,7 @@ instance (Predicate p x, Typeable p) => Predicate (Not p) x where
 --
 --   >>> isRight (refine @(And Positive Odd) @Int 203)
 --   True
-data And l r
+data And l r = And
   deriving (Generic, Generic1)
 
 infixr 3 &&
@@ -440,7 +440,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --
 --   >>> isRight (refine @(Or (LessThan 3) (GreaterThan 3)) @Int 2)
 --   True
-data Or l r
+data Or l r = Or
   deriving (Generic, Generic1)
 
 infixr 2 ||
