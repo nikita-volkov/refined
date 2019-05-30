@@ -2,7 +2,7 @@
 
 -- Copyright © 2015 Nikita Volkov
 -- Copyright © 2018 Remy Goldschmidt
--- Copyright © 2018 Daniel Cartwright
+-- Copyright © 2019 chessai
 --
 -- Permission is hereby granted, free of charge, to any person
 -- obtaining a copy of this software and associated documentation
@@ -39,7 +39,7 @@
 --------------------------------------------------------------------------------
 
 -- | This module is defined internally to avoid using the 'these'
---   package, which brings in a lot of very heavy and unnecessary 
+--   package, which brings in a lot of very heavy and unnecessary
 --   transitive dependencies. We export the type and constructors
 --   here, in case a user should need it.
 --   We provide a small API for working with the 'These' type here.
@@ -48,9 +48,9 @@
 --   data constructors are exported from both.
 module Refined.These
   (
-    -- * 'These' type    
+    -- * 'These' type
     These(This, That, These)
-  
+
     -- * Consumption
   , these
   , fromThese
@@ -68,7 +68,7 @@ module Refined.These
   , catThis
   , catThat
   , catThese
-  
+
   , partitionThese
 
     -- * Case predicates
@@ -96,9 +96,9 @@ import Data.Maybe      (isJust, mapMaybe)
 import Data.Semigroup  (Semigroup((<>)))
 import Data.Typeable   (Typeable)
 import GHC.Generics    (Generic, Generic1)
- 
+
 -- | This is defined internally to avoid using the 'these'
---   package, which brings in a lot of very heavy and unnecessary 
+--   package, which brings in a lot of very heavy and unnecessary
 --   transitive dependencies. We export the type and constructors
 --   here, in case a user should need it.
 data These a b = This a | That b | These a b
@@ -204,7 +204,7 @@ instance (Semigroup a, Semigroup b) => Semigroup (These a b) where
 
 #if MIN_VERSION_base(4,8,0)
 instance Bifunctor These where
-  bimap :: (a -> c) -> (b -> d) -> These a b -> These c d 
+  bimap :: (a -> c) -> (b -> d) -> These a b -> These c d
   bimap f _ (This a   ) = This  (f a)
   bimap _ g (That    b) = That        (g b)
   bimap f g (These a b) = These (f a) (g b)

@@ -2,7 +2,7 @@
 
 -- Copyright © 2015 Nikita Volkov
 -- Copyright © 2018 Remy Goldschmidt
--- Copyright © 2018 Daniel Cartwright
+-- Copyright © 2019 chessai
 --
 -- Permission is hereby granted, free of charge, to any person
 -- obtaining a copy of this software and associated documentation
@@ -40,7 +40,7 @@ module Refined.Orphan.Aeson () where
 #if HAVE_AESON
 
 import           Control.Monad    ((<=<))
-import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))            
+import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))
 import           Refined.Internal (Refined, Predicate, refineFail, unrefine)
 
 --------------------------------------------------------------------------------

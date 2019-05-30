@@ -2,7 +2,7 @@
 
 -- Copyright © 2015 Nikita Volkov
 -- Copyright © 2018 Remy Goldschmidt
--- Copyright © 2018 Daniel Cartwright
+-- Copyright © 2019 chessai
 --
 -- Permission is hereby granted, free of charge, to any person
 -- obtaining a copy of this software and associated documentation
@@ -99,7 +99,7 @@ module Refined.Internal
   , To
   , FromTo
   , EqualTo
-  , NotEqualTo 
+  , NotEqualTo
   , Positive
   , NonPositive
   , Negative
@@ -141,7 +141,7 @@ module Refined.Internal
   , RefineM, refineM, runRefineM
   , throwRefine, catchRefine
   , throwRefineOtherException
- 
+
   , (|>)
   , (.>)
 
@@ -247,7 +247,7 @@ decreasing = dec . foldl' go Empty where
 -- | A refinement type, which wraps a value of type @x@,
 --   ensuring that it satisfies a type-level predicate @p@.
 newtype Refined p x = Refined x
-  deriving (Eq, Foldable , Ord, Show, Typeable) 
+  deriving (Eq, Foldable , Ord, Show, Typeable)
 
 type role Refined nominal nominal
 
@@ -345,7 +345,7 @@ unrefine = coerce
 -- | A typeclass which defines a runtime interpretation of
 --   a type-level predicate @p@ for type @x@.
 class (Typeable p) => Predicate p x where
-  {-# MINIMAL validate #-} 
+  {-# MINIMAL validate #-}
   -- | Check the value @x@ according to the predicate @p@,
   --   producing an error string if the value does not satisfy.
   validate :: (Monad m) => p -> x -> RefineT m ()
@@ -731,7 +731,7 @@ data RefineException
       --   this will be 'This', if it came from the @r@ predicate, this
       --   will be 'That', and if it came from both @l@ and @r@, this
       --   will be 'These'.
-      
+
       -- note to self: what am I, Dr. Seuss?
     }
 
@@ -822,7 +822,7 @@ instance Exception RefineException where
 --------------------------------------------------------------------------------
 
 -- | A monad transformer that adds @'RefineException'@s to other monads.
---   
+--
 --   The @'pure'@ and @'Control.Monad.return'@ functions yield computations that produce
 --   the given value, while @'>>='@ sequences two subcomputations, exiting
 --   on the first @'RefineException'@.
@@ -893,7 +893,7 @@ catchRefine
 catchRefine = MonadError.catchError
 
 -- | A handler for a @'RefineException'@.
---   
+--
 --   'throwRefineOtherException' is useful for defining what
 --   behaviour 'validate' should have in the event of a predicate failure.
 throwRefineOtherException
@@ -901,7 +901,7 @@ throwRefineOtherException
   => TypeRep
   -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
   -> PP.Doc Void
-  -- ^ A 'PP.Doc' 'Void' encoding a custom error message to be pretty-printed. 
+  -- ^ A 'PP.Doc' 'Void' encoding a custom error message to be pretty-printed.
   -> RefineT m a
 throwRefineOtherException rep
   = RefineOtherException rep .> throwRefine
