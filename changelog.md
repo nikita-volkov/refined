@@ -7,6 +7,12 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ## [0.4.2] - 2019-05-30
 ### Removed
 - Re-removed dependency of `these` package.
+### Added
+- `Even`, `Odd`, and `DivisibleBy` predicates.
+- doctests for all predicates.
+### Changed
+- Make all predicates unary data constructors, instead of nullary,
+  and export those newly added constructors.
 
 ## [0.4.1.0] - 2019-04-15
 ### Fixed
