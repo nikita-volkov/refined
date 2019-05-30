@@ -98,15 +98,18 @@ module Refined.Internal
   , From(..)
   , To(..)
   , FromTo(..)
+  , NegativeFromTo(..)
   , EqualTo(..)
   , NotEqualTo(..)
+  , Odd(..)
+  , Even(..)
+  , DivisibleBy(..)
   , Positive
   , NonPositive
   , Negative
   , NonNegative
   , ZeroToOne
   , NonZero
-  , NegativeFromTo
 
     -- * Foldable predicates
   , SizeLessThan(..)
@@ -189,10 +192,24 @@ import qualified Control.Monad.Trans.Except   as ExceptT
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
+import           GHC.Real                     (Integral(mod), even, odd)
+
 import           Refined.These                (These(This,That,These))
 
 import qualified Data.Text.Prettyprint.Doc    as PP
 import qualified Language.Haskell.TH.Syntax   as TH
+
+--------------------------------------------------------------------------------
+
+-- $setup
+--
+-- Doctest imports
+--
+-- >>> :set -XDataKinds
+-- >>> :set -XTypeApplications
+-- >>> import Data.Int
+-- >>> import Data.Either (isLeft)
+--
 
 --------------------------------------------------------------------------------
 
@@ -304,18 +321,18 @@ refineError = refine .> either MonadError.throwError pure
 --
 --   For example:
 --
---   >>> $$(refineTH 23) :: Refined Positive Int
---   Refined 23
+--   > $$(refineTH 23) :: Refined Positive Int
+--   > Refined 23
 --
 --   Here's an example of an invalid value:
 --
---   >>> $$(refineTH 0) :: Refined Positive Int
---   <interactive>:6:4:
---       Value is not greater than 0
---       In the Template Haskell splice $$(refineTH 0)
---       In the expression: $$(refineTH 0) :: Refined Positive Int
---       In an equation for ‘it’:
---           it = $$(refineTH 0) :: Refined Positive Int
+--   > $$(refineTH 0) :: Refined Positive Int
+--   > <interactive>:6:4:
+--   >     Value is not greater than 0
+--   >     In the Template Haskell splice $$(refineTH 0)
+--   >     In the expression: $$(refineTH 0) :: Refined Positive Int
+--   >     In an equation for ‘it’:
+--   >         it = $$(refineTH 0) :: Refined Positive Int
 --
 --   If it's not evident, the example above indicates a compile-time failure,
 --   which means that the checking was done at compile-time, thus introducing a
@@ -353,6 +370,14 @@ class (Typeable p) => Predicate p x where
 --------------------------------------------------------------------------------
 
 -- | A predicate which is satisfied for all types.
+--   The value is not evaluated by 'validate'.
+--
+--   >>> isRight (refine @IdPred @Int undefined)
+--   True
+--
+--   >>> isLeft (refine @IdPred @Int undefined)
+--   False
+--
 data IdPred = IdPred
   deriving (Generic)
 
@@ -363,6 +388,12 @@ instance Predicate IdPred x where
 --------------------------------------------------------------------------------
 
 -- | The negation of a predicate.
+--
+--   >>> isRight (refine @(Not NonEmpty) @[Int] [])
+--   True
+--
+--   >>> isLeft (refine @(Not NonEmpty) @[Int] [1,2])
+--   True
 data Not p
   deriving (Generic, Generic1)
 
@@ -375,6 +406,12 @@ instance (Predicate p x, Typeable p) => Predicate (Not p) x where
 --------------------------------------------------------------------------------
 
 -- | The conjunction of two predicates.
+--
+--   >>> isLeft (refine @(And Positive Negative) @Int 3)
+--   True
+--
+--   >>> isRight (refine @(And Positive Odd) @Int 203)
+--   True
 data And l r
   deriving (Generic, Generic1)
 
@@ -397,6 +434,12 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --------------------------------------------------------------------------------
 
 -- | The disjunction of two predicates.
+--
+--   >>> isRight (refine @(Or Even Odd) @Int 3)
+--   True
+--
+--   >>> isRight (refine @(Or (LessThan 3) (GreaterThan 3)) @Int 2)
+--   True
 data Or l r
   deriving (Generic, Generic1)
 
@@ -417,6 +460,12 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is less than the specified type-level number.
+--
+--   >>> isRight (refine @(SizeLessThan 4) @[Int] [1,2,3])
+--   True
+--
+--   >>> isLeft (refine @(SizeLessThan 5) @[Int] [1,2,3,4,5])
+--   True
 data SizeLessThan (n :: Nat) = SizeLessThan
   deriving (Generic)
 
@@ -439,6 +488,13 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is greater than the specified type-level number.
+--
+--   >>> isLeft (refine  @(SizeGreaterThan 3) @[Int] [1,2,3])
+--   True
+--
+--   >>> isRight (refine @(SizeGreaterThan 3) @[Int] [1,2,3,4,5])
+--   True
+
 data SizeGreaterThan (n :: Nat) = SizeGreaterThan
   deriving (Generic)
 
@@ -461,6 +517,12 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' has a length
 -- which is equal to the specified type-level number.
+--
+--   >>> isRight (refine @(SizeEqualTo 4) @[Int] [1,2,3,4])
+--   True
+--
+--   >>> isLeft (refine @(SizeEqualTo 35) @[Int] [1,2,3,4])
+--   True
 data SizeEqualTo (n :: Nat) = SizeEqualTo
   deriving (Generic)
 
@@ -483,6 +545,12 @@ instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' contains elements
 -- in a strictly ascending order.
+--
+--   >>> isRight (refine @Ascending @[Int] [5, 8, 13, 21, 34])
+--   True
+--
+--   >>> isLeft (refine @Ascending @[Int] [34, 21, 13, 8, 5])
+--   True
 data Ascending = Ascending
   deriving (Generic)
 
@@ -495,6 +563,12 @@ instance (Foldable t, Ord a) => Predicate Ascending (t a) where
 
 -- | A 'Predicate' ensuring that the 'Foldable' contains elements
 -- in a strictly descending order.
+--
+--   >>> isRight (refine @Descending @[Int] [34, 21, 13, 8, 5])
+--   True
+--
+--   >>> isLeft (refine @Descending @[Int] [5, 8, 13, 21, 34])
+--   True
 data Descending = Descending
   deriving (Generic)
 
@@ -507,6 +581,12 @@ instance (Foldable t, Ord a) => Predicate Descending (t a) where
 
 -- | A 'Predicate' ensuring that the value is less than the
 --   specified type-level number.
+--
+--   >>> isRight (refine @(LessThan 12) @Int 11)
+--   True
+--
+--   >>> isLeft (refine @(LessThan 12) @Int 12)
+--   True
 data LessThan (n :: Nat) = LessThan
   deriving (Generic)
 
@@ -520,6 +600,12 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
 
 -- | A 'Predicate' ensuring that the value is greater than the
 --   specified type-level number.
+--
+--   >>> isRight (refine @(GreaterThan 65) @Int 67)
+--   True
+--
+--   >>> isLeft (refine @(GreaterThan 65) @Int 65)
+--   True
 data GreaterThan (n :: Nat) = GreaterThan
   deriving (Generic)
 
@@ -533,6 +619,15 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
 
 -- | A 'Predicate' ensuring that the value is greater than or equal to the
 --   specified type-level number.
+--
+--   >>> isRight (refine @(From 9) @Int 10)
+--   True
+--
+--   >>> isRight (refine @(From 10) @Int 10)
+--   True
+--
+--   >>> isLeft (refine @(From 11) @Int 10)
+--   True
 data From (n :: Nat) = From
   deriving (Generic)
 
@@ -546,6 +641,12 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
 
 -- | A 'Predicate' ensuring that the value is less than or equal to the
 --   specified type-level number.
+--
+--   >>> isRight (refine @(To 23) @Int 17)
+--   True
+--
+--   >>> isLeft (refine @(To 17) @Int 23)
+--   True
 data To (n :: Nat) = To
   deriving (Generic)
 
@@ -558,6 +659,18 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is within an inclusive range.
+--
+--   >>> isRight (refine @(FromTo 0 16) @Int 13)
+--   True
+--
+--   >>> isRight (refine @(FromTo 13 15) @Int 13)
+--   True
+--
+--   >>> isRight (refine @(FromTo 13 15) @Int 15)
+--   True
+--
+--   >>> isLeft (refine @(FromTo 13 15) @Int 12)
+--   True
 data FromTo (mn :: Nat) (mx :: Nat) = FromTo
   deriving (Generic)
 
@@ -579,6 +692,12 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
 
 -- | A 'Predicate' ensuring that the value is equal to the specified
 --   type-level number @n@.
+--
+--   >>> isRight (refine @(EqualTo 5) @Int 5)
+--   True
+--
+--   >>> isLeft (refine @(EqualTo 6) @Int 5)
+--   True
 data EqualTo (n :: Nat) = EqualTo
   deriving (Generic)
 
@@ -586,12 +705,19 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
     let x' = natVal p
     unless (x == fromIntegral x') $ do
-      throwRefineOtherException (typeOf p) ( "Value does not equal " <> PP.pretty x' )
+      throwRefineOtherException (typeOf p) ("Value does not equal " <> PP.pretty x')
 
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is not equal to the specified
 --   type-level number @n@.
+--
+--   >>> isRight (refine @(NotEqualTo 6) @Int 5)
+--   True
+--
+--   >>> isLeft (refine @(NotEqualTo 5) @Int 5)
+--   True
+
 data NotEqualTo (n :: Nat) = NotEqualTo
   deriving (Generic)
 
@@ -606,10 +732,16 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
 -- | A 'Predicate' ensuring that the value is greater or equal than a negative
 --   number specified as a type-level (positive) number @n@ and less than a
 --   type-level (positive) number @m@.
-data NegativeFromTo (n :: Nat) (m :: Nat)
+--
+--   >>> isRight (refine @(NegativeFromTo 5 12) @Int (-3))
+--   True
+--
+--   >>> isLeft (refine @(NegativeFromTo 4 3) @Int (-5))
+--   True
+data NegativeFromTo (n :: Nat) (m :: Nat) = NegativeFromTo
   deriving (Generic)
 
-instance (Ord x, Num x, KnownNat n, KnownNat m, n <= m) => Predicate (NegativeFromTo n m) x where
+instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m) x where
   validate p x = do
     let n' = natVal (Proxy @n)
         m' = natVal (Proxy @m)
@@ -621,6 +753,55 @@ instance (Ord x, Num x, KnownNat n, KnownNat m, n <= m) => Predicate (NegativeFr
                 , ")"
                 ] |> mconcat
       throwRefineOtherException (typeOf p) msg
+
+--------------------------------------------------------------------------------
+
+-- | A 'Predicate' ensuring that the value is divisible by @n@.
+--   That is to say, @m `mod` 'natVal' ('Proxy' @n) '==' 0@
+--
+--   >>> isRight (refine @(DivisibleBy 3) @Int 12)
+--   True
+--
+--   >>> isLeft (refine @(DivisibleBy 2) @Int 37)
+--   True
+data DivisibleBy (n :: Nat) = DivisibleBy
+  deriving (Generic)
+
+instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
+  validate p x = unless (x `mod` (fromIntegral $ natVal p) == 0) $ do
+    throwRefineOtherException (typeOf p) $ "Value is not divisible by " <> PP.pretty (natVal p)
+
+--------------------------------------------------------------------------------
+
+-- | A 'Predicate' ensuring that the value is odd.
+--
+--   >>> isRight (refine @Odd @Int 33)
+--   True
+--
+--   >>> isLeft (refine @Odd @Int 32)
+--   True
+data Odd = Odd
+  deriving (Generic)
+
+instance (Integral x) => Predicate Odd x where
+  validate p x = unless (odd x) $ do
+    throwRefineOtherException (typeOf p) $ "Value is not odd."
+
+--------------------------------------------------------------------------------
+
+-- | A 'Predicate' ensuring that the value is even.
+--
+--   >>> isRight (refine @Even @Int 32)
+--   True
+--
+--   >>> isLeft (refine @Even @Int 33)
+--   True
+data Even = Even
+  deriving (Generic)
+
+instance (Integral x) => Predicate Even x where
+  validate p x = unless (even x) $ do
+    throwRefineOtherException (typeOf p) $ "Value is not even."
 
 --------------------------------------------------------------------------------
 
