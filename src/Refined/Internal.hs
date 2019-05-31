@@ -757,7 +757,6 @@ instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is divisible by @n@.
---   That is to say, @m `mod` 'natVal' ('Proxy' @n) '==' 0@
 --
 --   >>> isRight (refine @(DivisibleBy 3) @Int 12)
 --   True
