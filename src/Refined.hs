@@ -70,26 +70,27 @@ module Refined
   , Predicate (validate)
 
     -- * Logical predicates
-  , Not
-  , And
+  , Not(..)
+  , And(..)
   , type (&&)
-  , Or
+  , Or(..)
   , type (||)
 
     -- * Identity predicate
-  , IdPred
+  , IdPred(..)
 
     -- * Numeric predicates
-  , LessThan
-  , GreaterThan
-  , From
-  , To
-  , FromTo
-  , EqualTo
-  , NotEqualTo
-  , Odd
-  , Even
-  , DivisibleBy
+  , LessThan(..)
+  , GreaterThan(..)
+  , From(..)
+  , To(..)
+  , FromTo(..)
+  , NegativeFromTo(..)
+  , EqualTo(..)
+  , NotEqualTo(..)
+  , Odd(..)
+  , Even(..)
+  , DivisibleBy(..)
   , Positive
   , NonPositive
   , Negative
@@ -98,14 +99,14 @@ module Refined
   , NonZero
 
     -- * Foldable predicates
-  , SizeLessThan
-  , SizeGreaterThan
-  , SizeEqualTo
+  , SizeLessThan(..)
+  , SizeGreaterThan(..)
+  , SizeEqualTo(..)
   , NonEmpty
 
     -- * IsList predicates
-  , Ascending
-  , Descending
+  , Ascending(..)
+  , Descending(..)
 
     -- * Weakening
   , Weaken (weaken)
