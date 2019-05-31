@@ -87,6 +87,9 @@ module Refined
   , FromTo
   , EqualTo
   , NotEqualTo
+  , Odd
+  , Even
+  , DivisibleBy
   , Positive
   , NonPositive
   , Negative
