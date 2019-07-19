@@ -128,6 +128,10 @@ module Refined.Internal
   , leftOr
   , rightOr
 
+    -- * Strengthening
+  , strengthen
+  , strengthenM
+
     -- * Error handling
 
     -- ** 'RefineException'
@@ -140,7 +144,7 @@ module Refined.Internal
   , displayRefineException
 
     -- ** 'RefineT' and 'RefineM'
-  , RefineT, runRefineT, mapRefineT
+  , RefineT, runRefineT, exceptRefine, mapRefineT
   , RefineM, refineM, runRefineM
   , throwRefine, catchRefine
   , throwRefineOtherException
@@ -891,6 +895,20 @@ leftOr = coerce
 rightOr :: Refined r x -> Refined (Or l r) x
 rightOr = coerce
 
+-- | Strengthen a refinement by composing it with another.
+strengthen :: forall p p' x. (Predicate p x, Predicate p' x)
+  => Refined p x
+  -> Either RefineException (Refined (p && p') x)
+strengthen r = refine @(p && p') (unrefine r)
+{-# inlineable strengthen #-}
+
+-- | Strengthen a refinement by composing it with another
+--   inside of the 'RefineT' monad.
+strengthenM :: forall p p' x m. (Predicate p x, Predicate p' x, Monad m)
+  => Refined p x
+  -> RefineT m (Refined (p && p') x)
+strengthenM r = exceptRefine (strengthen r)
+
 --------------------------------------------------------------------------------
 
 -- | An exception encoding the way in which a 'Predicate' failed.
@@ -1049,6 +1067,14 @@ runRefineM
 runRefineM = runRefineT .> runIdentity
 
 --------------------------------------------------------------------------------
+
+-- | Constructor for computations in the @'RefineT'@ movie.
+--   (The inverse of 'runRefineT').
+exceptRefine
+  :: (Monad m)
+  => Either RefineException a
+  -> RefineT m a
+exceptRefine = MonadError.liftEither
 
 -- | One can use @'throwRefine'@ inside of a monadic
 --   context to begin processing a @'RefineException'@.
