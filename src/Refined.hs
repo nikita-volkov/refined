@@ -115,6 +115,10 @@ module Refined
   , leftOr
   , rightOr
 
+    -- * Strengthening
+  , strengthen
+  , strengthenM
+
     -- * Error handling
 
     -- ** 'RefineException'
@@ -127,7 +131,7 @@ module Refined
   , displayRefineException
 
     -- ** 'RefineT' and 'RefineM'
-  , RefineT, runRefineT, mapRefineT
+  , RefineT, runRefineT, exceptRefine, mapRefineT
   , RefineM, refineM, runRefineM
   , throwRefine, catchRefine
   , throwRefineOtherException
