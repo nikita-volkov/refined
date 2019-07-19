@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## [0.4.2.2] - TBA
+## [0.4.2.2] - 2019-07-19
 ### Added
 - `exceptRefine`, `strengthen`, and `strengthenM`
 
