@@ -32,6 +32,7 @@
 
 --------------------------------------------------------------------------------
 
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFoldable             #-}
@@ -81,6 +82,7 @@ module Refined.Internal
 
     -- * 'Predicate'
   , Predicate (validate)
+  , reifyPredicate
 
     -- * Logical predicates
   , Not(..)
@@ -370,6 +372,12 @@ class (Typeable p) => Predicate p x where
   -- | Check the value @x@ according to the predicate @p@,
   --   producing an error string if the value does not satisfy.
   validate :: (Monad m) => p -> x -> RefineT m ()
+
+--------------------------------------------------------------------------------
+
+-- | Reify a 'Predicate' by turning it into a value-level predicate.
+reifyPredicate :: forall p a. Predicate p a => a -> Bool
+reifyPredicate = refine @p @a .> isRight
 
 --------------------------------------------------------------------------------
 
