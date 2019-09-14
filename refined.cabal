@@ -104,3 +104,4 @@ test-suite arbitrary
       base
     , refined
     , QuickCheck
+  default-language: Haskell2010
