@@ -382,7 +382,8 @@ reifyPredicate = refine @p @a .> isRight
 --------------------------------------------------------------------------------
 
 -- | A predicate which is satisfied for all types.
---   The value is not evaluated by 'validate'.
+--   Arguments passed to @'validate'@ in @'validate' 'IdPred' x@
+--   are not evaluated.
 --
 --   >>> isRight (refine @IdPred @Int undefined)
 --   True
