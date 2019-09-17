@@ -68,6 +68,7 @@ module Refined
 
     -- * 'Predicate'
   , Predicate (validate)
+  , reifyPredicate
 
     -- * Logical predicates
   , Not(..)

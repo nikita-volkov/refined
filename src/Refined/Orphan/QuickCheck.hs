@@ -27,8 +27,10 @@
 
 --------------------------------------------------------------------------------
 
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 --------------------------------------------------------------------------------
 
@@ -41,13 +43,48 @@ module Refined.Orphan.QuickCheck () where
 #if HAVE_QUICKCHECK
 
 import           Data.Either      (isRight)
-import           Refined.Internal (Refined(Refined), RefineException, Predicate, refine)
-import           Test.QuickCheck  (Arbitrary(arbitrary), suchThat, Gen)
+import           Refined.Internal (Refined, RefineException, Predicate, refine, reifyPredicate)
+import           Refined.Unsafe   (reallyUnsafeRefine)
+import           Test.QuickCheck  (Arbitrary(arbitrary), suchThatMaybe, Gen, sized, resize)
+import           Data.Typeable    (Typeable, showsTypeRep, typeRep)
+import           Data.Proxy       (Proxy(Proxy))
 
 --------------------------------------------------------------------------------
 
-instance forall p a. (Arbitrary a, Predicate p a) => Arbitrary (Refined p a) where
-  arbitrary = Refined <$> suchThat (arbitrary :: Gen a) (isRight . (refine :: a -> Either RefineException (Refined p a)))
+instance forall p a. (Arbitrary a, Typeable a, Typeable p, Predicate p a) => Arbitrary (Refined p a) where
+  arbitrary = loop 0 arbitrary
+
+loop :: forall p a. (Typeable p, Typeable a, Predicate p a)
+  => Int -> Gen a -> Gen (Refined p a)
+loop runs gen
+  | runs < 100 = do
+      m <- suchThatRefined gen
+      case m of
+        Just x -> do
+          pure x
+        Nothing -> do
+          loop (runs + 1) gen
+  | otherwise = error (refinedGenError (Proxy @p) (Proxy @a))
+
+refinedGenError :: (Typeable p, Typeable a)
+  => Proxy p -> Proxy a -> String
+refinedGenError p a = "arbitrary :: Refined ("
+  ++ typeName p
+  ++ ") ("
+  ++ typeName a
+  ++ "): Failed to generate a value that satisfied"
+  ++ " the predicate after 100 tries."
+
+suchThatRefined :: forall p a. (Predicate p a)
+  => Gen a -> Gen (Maybe (Refined p a))
+suchThatRefined gen = do
+  m <- suchThatMaybe gen (reifyPredicate @p @a)
+  case m of
+    Nothing -> pure Nothing
+    Just x -> pure (Just (reallyUnsafeRefine x))
+
+typeName :: Typeable a => Proxy a -> String
+typeName = flip showsTypeRep "" . typeRep
 
 --------------------------------------------------------------------------------
 
