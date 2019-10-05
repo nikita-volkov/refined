@@ -46,6 +46,7 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -72,10 +73,12 @@ module Refined.Internal
 
     -- ** Creation
   , refine
+  , refine_
   , refineThrow
   , refineFail
   , refineError
   , refineTH
+  , refineTH_
 
     -- ** Consumption
   , unrefine
@@ -299,6 +302,13 @@ refine x = do
     pure (Refined x)
 {-# INLINABLE refine #-}
 
+-- | Like 'refine', but discards the refinement.
+--   This _can_ be useful when you only need to validate
+--   that some value at runtime satisfies some predicate.
+--   See also 'reifyPredicate'.
+refine_ :: forall p x. (Predicate p x) => x -> Either RefineException x
+refine_ = refine @p @x .> coerce
+
 -- | Constructs a 'Refined' value at run-time,
 --   calling 'Control.Monad.Catch.throwM' if the value
 --   does not satisfy the predicate.
@@ -352,6 +362,22 @@ refineTH =
         -> x
         -> Either RefineException (Refined p x)
       refineByResult = const refine
+  in fix $ \loop -> refineByResult (loop undefined)
+       .> either (show .> fail) TH.lift
+       .> fmap TH.TExp
+
+-- | Like 'refineTH', but immediately unrefines the value.
+--   This is useful when some value need only be refined
+--   at compile-time.
+refineTH_ :: forall p x. (Predicate p x, TH.Lift x)
+  => x
+  -> TH.Q (TH.TExp x)
+refineTH_ =
+  let refineByResult :: (Predicate p x)
+        => TH.Q (TH.TExp x)
+        -> x
+        -> Either RefineException x
+      refineByResult = const (refine_ @p @x)
   in fix $ \loop -> refineByResult (loop undefined)
        .> either (show .> fail) TH.lift
        .> fmap TH.TExp

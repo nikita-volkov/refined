@@ -105,3 +105,12 @@ test-suite arbitrary
     , refined
     , QuickCheck
   default-language: Haskell2010
+
+test-suite compiles
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Compiles.hs
+  build-depends:
+      base
+    , refined
+  default-language: Haskell2010

@@ -58,10 +58,12 @@ module Refined
 
     -- ** Creation
   , refine
+  , refine_
   , refineThrow
   , refineFail
   , refineError
   , refineTH
+  , refineTH_
 
     -- ** Consumption
   , unrefine
