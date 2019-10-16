@@ -77,13 +77,13 @@ library
     , exceptions       >= 0.8 && < 0.11
     , mtl              >= 2.2.1 && < 2.3
     , prettyprinter    >= 1.1.0.1 && < 1.4
-    , template-haskell >= 2.9 && < 2.15
+    , template-haskell >= 2.9 && < 2.16
     , transformers     >= 0.5 && < 0.6
   if flag(aeson)
     build-depends: aeson >= 0.9 && < 1.5
     cpp-options: -DHAVE_AESON
   if flag(QuickCheck)
-    build-depends: QuickCheck >= 2.1 && < 2.13
+    build-depends: QuickCheck >= 2.1 && < 2.14
     cpp-options: -DHAVE_QUICKCHECK
 
 test-suite doctest
