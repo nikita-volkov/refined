@@ -8,6 +8,8 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ### Added
 - `refine_`
 - `refineTH_`
+### Changed
+- Allow newer `template-haskell` and `QuickCheck`.
 
 ## [0.4.2.3] - 2019-09-17
 ### Added
