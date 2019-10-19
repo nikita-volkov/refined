@@ -11,7 +11,6 @@ module Main (main) where
 
 import Refined
 import Prelude (IO,putStrLn,Int)
-import Predicates
 import Data.Void (Void)
 
 main :: IO ()
