@@ -114,3 +114,12 @@ test-suite compiles
       base
     , refined
   default-language: Haskell2010
+
+-- test-suite doesnt-compile
+--   type: exitcode-stdio-1.0
+--   hs-source-dirs: test
+--   main-is: DoesntCompile.hs
+--   build-depends:
+--       base
+--     , refined
+--   default-language: Haskell2010
