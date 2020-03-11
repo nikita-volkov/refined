@@ -218,6 +218,7 @@ import qualified Language.Haskell.TH.Syntax   as TH
 -- Doctest imports
 --
 -- >>> :set -XDataKinds
+-- >>> :set -XOverloadedStrings
 -- >>> :set -XTypeApplications
 -- >>> import Data.Int
 -- >>> import Data.Either (isLeft)
