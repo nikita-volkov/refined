@@ -116,7 +116,7 @@ module Refined.Internal
   , ZeroToOne
   , NonZero
 
-    -- * Foldable predicates
+    -- * Size predicates
   , SizeLessThan(..)
   , SizeGreaterThan(..)
   , SizeEqualTo(..)
@@ -178,10 +178,13 @@ import           Data.Foldable                (Foldable(length, foldl'))
 import           Data.Function                (const, flip, ($), (.))
 import           Data.Functor                 (Functor, fmap)
 import           Data.Functor.Identity        (Identity (runIdentity))
+import           Data.Int                     (Int)
 import           Data.Monoid                  (mconcat)
 import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
 import           Data.Proxy                   (Proxy (Proxy))
 import           Data.Semigroup               (Semigroup((<>)))
+import           Data.Text                    (Text)
+import qualified Data.Text                    as Text
 import           Data.Typeable                (TypeRep, Typeable, typeOf)
 import           Data.Void                    (Void)
 import           Text.Read                    (Read (readsPrec), lex, readParen)
@@ -497,7 +500,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 
 --------------------------------------------------------------------------------
 
--- | A 'Predicate' ensuring that the 'Foldable' has a length
+-- | A 'Predicate' ensuring that the value has a length
 -- which is less than the specified type-level number.
 --
 --   >>> isRight (refine @(SizeLessThan 4) @[Int] [1,2,3])
@@ -505,27 +508,24 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --
 --   >>> isLeft (refine @(SizeLessThan 5) @[Int] [1,2,3,4,5])
 --   True
+--
+--   >>> isRight (refine @(SizeLessThan 4) @Text "Hi")
+--   True
+--
+--   >>> isLeft (refine @(SizeLessThan 4) @Text "Hello")
+--   True
 data SizeLessThan (n :: Nat) = SizeLessThan
   deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
-  validate p x = do
-    let x' = natVal p
-        sz = length x
-    unless (sz < fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        ( [ "Size of Foldable is not less than "
-          , PP.pretty x'
-          , newline
-          , twoSpaces
-          , "Size is: "
-          , PP.pretty sz
-          ] |> mconcat
-        )
+  validate p x = sized p (x, "Foldable") length ((<), "less than")
+
+instance (KnownNat n) => Predicate (SizeLessThan n) Text where
+  validate p x = sized p (x, "Text") Text.length ((<), "less than")
 
 --------------------------------------------------------------------------------
 
--- | A 'Predicate' ensuring that the 'Foldable' has a length
+-- | A 'Predicate' ensuring that the value has a length
 -- which is greater than the specified type-level number.
 --
 --   >>> isLeft (refine  @(SizeGreaterThan 3) @[Int] [1,2,3])
@@ -533,28 +533,24 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
 --
 --   >>> isRight (refine @(SizeGreaterThan 3) @[Int] [1,2,3,4,5])
 --   True
-
+--
+--   >>> isLeft (refine @(SizeGreaterThan 4) @Text "Hi")
+--   True
+--
+--   >>> isRight (refine @(SizeGreaterThan 4) @Text "Hello")
+--   True
 data SizeGreaterThan (n :: Nat) = SizeGreaterThan
   deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
-  validate p x = do
-    let x' = natVal p
-        sz = length x
-    unless (sz > fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        ( [ "Size of Foldable is not greater than "
-          , PP.pretty x'
-          , newline
-          , twoSpaces
-          , "Size is: "
-          , PP.pretty sz
-          ] |> mconcat
-        )
+  validate p x = sized p (x, "Foldable") length ((>), "greater than")
+
+instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
+  validate p x = sized p (x, "Text") Text.length ((>), "greater than")
 
 --------------------------------------------------------------------------------
 
--- | A 'Predicate' ensuring that the 'Foldable' has a length
+-- | A 'Predicate' ensuring that the value has a length
 -- which is equal to the specified type-level number.
 --
 --   >>> isRight (refine @(SizeEqualTo 4) @[Int] [1,2,3,4])
@@ -562,23 +558,20 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
 --
 --   >>> isLeft (refine @(SizeEqualTo 35) @[Int] [1,2,3,4])
 --   True
+--
+--   >>> isRight (refine @(SizeEqualTo 4) @Text "four")
+--   True
+--
+--   >>> isLeft (refine @(SizeEqualTo 35) @Text "four")
+--   True
 data SizeEqualTo (n :: Nat) = SizeEqualTo
   deriving (Generic)
 
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
-  validate p x = do
-    let x' = natVal p
-        sz = length x
-    unless (sz == fromIntegral x') $ do
-      throwRefineOtherException (typeOf p)
-        ( [ "Size of Foldable is not equal to "
-          , PP.pretty x'
-          , newline
-          , twoSpaces
-          , "Size is: "
-          , PP.pretty sz
-          ] |> mconcat
-        )
+  validate p x = sized p (x, "Foldable") length ((==), "equal to")
+
+instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
+  validate p x = sized p (x, "Text") Text.length ((==), "equal to")
 
 --------------------------------------------------------------------------------
 
@@ -861,7 +854,7 @@ type ZeroToOne = FromTo 0 1
 -- | A 'Predicate' ensuring that the value is not equal to zero.
 type NonZero = NotEqualTo 0
 
--- | A 'Predicate' ensuring that the 'Foldable' is non-empty.
+-- | A 'Predicate' ensuring that the type is non-empty.
 type NonEmpty = SizeGreaterThan 0
 
 --------------------------------------------------------------------------------
@@ -1148,3 +1141,24 @@ throwRefineOtherException rep
   = RefineOtherException rep .> throwRefine
 
 --------------------------------------------------------------------------------
+
+-- | Helper function for sized predicates.
+sized :: (Typeable (p n), KnownNat n, Monad m)
+  => p n -- ^ predicate
+  -> (a, PP.Doc Void) -- ^ (value, type)
+  -> (a -> Int) -- ^ length of value
+  -> (Int -> Int -> Bool, PP.Doc Void) -- ^ (compare :: Length -> KnownNat -> Bool, comparison string)
+  -> RefineT m ()
+sized p (x, typ) lenF (cmp, cmpDesc) = do
+  let x' = natVal p
+      sz = lenF x
+  unless (cmp sz (fromIntegral x')) $ do
+    throwRefineOtherException (typeOf p)
+      ( [ "Size of ", typ, " is not ", cmpDesc
+        , PP.pretty x'
+        , newline
+        , twoSpaces
+        , "Size is: "
+        , PP.pretty sz
+        ] |> mconcat
+      )
