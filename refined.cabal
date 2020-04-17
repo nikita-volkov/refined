@@ -34,7 +34,8 @@ tested-with:
   , GHC == 8.2.2
   , GHC == 8.4.4
   , GHC == 8.6.5
-  , GHC == 8.8.1
+  , GHC == 8.8.3
+  , GHC == 8.10.1
 extra-source-files:
     README.md
   , changelog.md
@@ -81,7 +82,7 @@ library
     , exceptions       >= 0.8 && < 0.11
     , mtl              >= 2.2.2 && < 2.3
     , prettyprinter    >= 1.1.0.1 && < 1.7
-    , template-haskell >= 2.9 && < 2.16
+    , template-haskell >= 2.9 && < 2.17
     , text             >= 1.2 && < 1.3
     , transformers     >= 0.5 && < 0.6
   if flag(aeson)
