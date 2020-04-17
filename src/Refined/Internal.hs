@@ -1150,10 +1150,14 @@ throwRefineOtherException rep
 
 -- | Helper function for sized predicates.
 sized :: (Typeable (p n), KnownNat n, Monad m)
-  => p n -- ^ predicate
-  -> (a, PP.Doc Void) -- ^ (value, type)
-  -> (a -> Int) -- ^ length of value
-  -> (Int -> Int -> Bool, PP.Doc Void) -- ^ (compare :: Length -> KnownNat -> Bool, comparison string)
+  => p n
+     -- ^ predicate
+  -> (a, PP.Doc Void)
+     -- ^ (value, type)
+  -> (a -> Int)
+     -- ^ length of value
+  -> (Int -> Int -> Bool, PP.Doc Void)
+     -- ^ (compare :: Length -> KnownNat -> Bool, comparison string)
   -> RefineT m ()
 sized p (x, typ) lenF (cmp, cmpDesc) = do
   let x' = natVal p
