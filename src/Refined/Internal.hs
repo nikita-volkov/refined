@@ -315,6 +315,7 @@ refine x = do
 --   See also 'reifyPredicate'.
 refine_ :: forall p x. (Predicate p x) => x -> Either RefineException x
 refine_ = refine @p @x .> coerce
+{-# INLINABLE refine_ #-}
 
 -- | Constructs a 'Refined' value at run-time,
 --   calling 'Control.Monad.Catch.throwM' if the value
@@ -411,6 +412,7 @@ class (Typeable p) => Predicate p x where
 -- | Reify a 'Predicate' by turning it into a value-level predicate.
 reifyPredicate :: forall p a. Predicate p a => a -> Bool
 reifyPredicate = refine @p @a .> isRight
+{-# INLINABLE reifyPredicate #-}
 
 --------------------------------------------------------------------------------
 

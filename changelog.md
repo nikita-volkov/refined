@@ -6,12 +6,14 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 
 ## [0.5] - 2020-XX-XX
 ### Added
-- Add sized Predicate instances for `Text`
+- sized Predicate instances for `Text`
+- INLINABLE pragmas on `refine_` `reifyPredicate` 
 
 ### Changed
 - lower bound on mtl to 2.2.2 due to use of liftEither. 
   Thanks to @k0ral for reporting this
 - Generalize sized predicates
+- Allow newer template-haskell (< 0.16 ==> < 0.17)
 
 ## [0.4.4] - 2019-10-18
 ### Added
