@@ -292,6 +292,9 @@ instance (Read x, Predicate p x) => Read (Refined p x) where
 
 instance (TH.Lift x) => TH.Lift (Refined p x) where
   lift (Refined a) = [|Refined a|]
+#if MIN_VERSION_template_haskell(0,16,0)
+  liftTyped (Refined a) = [||Refined a||]
+#endif
 
 --------------------------------------------------------------------------------
 
