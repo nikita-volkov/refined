@@ -130,6 +130,7 @@ module Refined
     , RefineAndException
     , RefineOrException
     , RefineOtherException
+    , RefineSomeException
     )
   , displayRefineException
 
@@ -138,6 +139,7 @@ module Refined
   , RefineM, refineM, runRefineM
   , throwRefine, catchRefine
   , throwRefineOtherException
+  , throwRefineSomeException
 
     -- * Re-Exports
   , pretty
