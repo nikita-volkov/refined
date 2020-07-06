@@ -167,6 +167,7 @@ import           Prelude
                  (Num, fromIntegral, negate, undefined)
 
 import           Control.Applicative          (Applicative (pure))
+import           Control.DeepSeq              (NFData)
 import           Control.Exception            (Exception (displayException))
 import           Control.Monad                (Monad, unless, when)
 import           Data.Bool                    (Bool(True,False),(&&), otherwise)
@@ -277,7 +278,7 @@ decreasing = dec . foldl' go Empty where
 -- | A refinement type, which wraps a value of type @x@,
 --   ensuring that it satisfies a type-level predicate @p@.
 newtype Refined p x = Refined x
-  deriving (Eq, Foldable , Ord, Show, Typeable)
+  deriving (Eq, Foldable, Ord, Show, Typeable, NFData)
 
 type role Refined nominal nominal
 
