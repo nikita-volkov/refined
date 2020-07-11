@@ -11,13 +11,16 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - `NFData` instance for `Refined`
 - RefineSomeException constructor. Enables recovering
   specific validation exceptions.
-- Remove `Refined.Internal` module
 
 ### Changed
 - lower bound on mtl to 2.2.2 due to use of liftEither. 
   Thanks to @k0ral for reporting this
 - Generalize sized predicates
 - Allow newer template-haskell (< 0.16 ==> < 0.17)
+
+### Removed
+- `Refined.Internal` module
+- Orphan modules
 
 ## [0.4.4] - 2019-10-18
 ### Added
