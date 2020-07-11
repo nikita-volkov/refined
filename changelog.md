@@ -11,6 +11,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - `NFData` instance for `Refined`
 - RefineSomeException constructor. Enables recovering
   specific validation exceptions.
+- Remove `Refined.Internal` module
 
 ### Changed
 - lower bound on mtl to 2.2.2 due to use of liftEither. 

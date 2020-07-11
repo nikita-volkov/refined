@@ -41,7 +41,7 @@ module Refined.Orphan.Aeson () where
 
 import           Control.Monad    ((<=<))
 import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))
-import           Refined.Internal (Refined, Predicate, refineFail, unrefine)
+import           Refined          (Refined, Predicate, refineFail, unrefine)
 
 --------------------------------------------------------------------------------
 

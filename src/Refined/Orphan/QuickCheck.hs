@@ -43,7 +43,7 @@ module Refined.Orphan.QuickCheck () where
 #if HAVE_QUICKCHECK
 
 import           Data.Either      (isRight)
-import           Refined.Internal (Refined, RefineException, Predicate, refine, reifyPredicate)
+import           Refined (Refined, RefineException, Predicate, refine, reifyPredicate)
 import           Refined.Unsafe   (reallyUnsafeRefine)
 import           Test.QuickCheck  (Arbitrary(arbitrary), suchThatMaybe, Gen, sized, resize)
 import           Data.Typeable    (Typeable, showsTypeRep, typeRep)

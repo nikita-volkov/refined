@@ -67,7 +67,6 @@ library
     src
   exposed-modules:
     Refined
-    Refined.Internal
     Refined.Orphan
       Refined.Orphan.Aeson
       Refined.Orphan.QuickCheck

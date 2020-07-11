@@ -1,3 +1,8 @@
+{-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RoleAnnotations            #-}
+
 --------------------------------------------------------------------------------
 
 -- Copyright © 2015 Nikita Volkov
@@ -27,10 +32,6 @@
 
 --------------------------------------------------------------------------------
 
-{-# OPTIONS_GHC -Wall #-}
-
---------------------------------------------------------------------------------
-
 -- | This module exports the 'Refined' type with its
 --   constructor. This is very risky! In particular, the 'Coercible'
 --   instances will be visible throughout the importing module.
@@ -42,4 +43,12 @@ module Refined.Unsafe.Type
   ( Refined(Refined)
   ) where
 
-import Refined.Internal (Refined(Refined))
+import           Control.DeepSeq              (NFData)
+
+-- | A refinement type, which wraps a value of type @x@,
+newtype Refined p x = Refined x
+  deriving newtype (Eq, Ord, NFData)
+  deriving stock (Show)
+  deriving stock (Foldable)
+
+type role Refined nominal nominal

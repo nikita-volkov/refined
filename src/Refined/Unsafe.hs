@@ -66,7 +66,8 @@ import           Data.Function                (id)
 
 import           GHC.Err                      (error)
 
-import           Refined.Internal             (Refined(Refined), Predicate, refine, (.>))
+import           Refined                      (Predicate, refine, (.>))
+import           Refined.Unsafe.Type          (Refined(Refined))
 import           Data.Type.Coercion           (Coercion (..))
 #if __GLASGOW_HASKELL__ >= 805
 import           Data.Coerce                  (Coercible)
