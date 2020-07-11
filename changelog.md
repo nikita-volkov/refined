@@ -8,6 +8,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ### Added
 - sized Predicate instances for `Text`
 - INLINABLE pragmas on `refine_` `reifyPredicate` 
+- `NFData` instance for `Refined`
 
 ### Changed
 - lower bound on mtl to 2.2.2 due to use of liftEither. 
