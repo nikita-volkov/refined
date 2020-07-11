@@ -167,38 +167,25 @@ module Refined
 
 --------------------------------------------------------------------------------
 
-import           Prelude
-                 (Num, fromIntegral, negate, undefined)
-
-import           Control.Applicative          (Applicative (pure))
 import           Control.Exception            (Exception (displayException))
-import           Control.Monad                (Monad, unless, when)
-import           Data.Bool                    (Bool(True,False),(&&), otherwise)
+import           Control.Monad                (unless, when)
 import           Data.Coerce                  (coerce)
-import           Data.Either
-                 (Either (Left, Right), either, isRight)
-import           Data.Eq                      (Eq, (==), (/=))
-import           Data.Foldable                (Foldable(length, foldl'))
-import           Data.Function                (const, flip, ($), (.))
-import           Data.Functor                 (Functor, fmap)
-import           Data.Functor.Identity        (Identity (runIdentity))
-import           Data.Int                     (Int)
-import           Data.Monoid                  (mconcat)
-import           Data.Ord                     (Ord, (<), (<=), (>), (>=))
-import           Data.Proxy                   (Proxy (Proxy))
-import           Data.Semigroup               (Semigroup((<>)))
+import           Data.Either                  (isRight)
+import           Data.Foldable                (foldl')
+import           Data.Functor.Identity        (Identity(runIdentity))
+import           Data.Proxy                   (Proxy(Proxy))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as Text
 import           Data.Typeable                (TypeRep, Typeable, typeOf)
 import           Data.Void                    (Void)
-import           Text.Read                    (Read (readsPrec), lex, readParen)
-import           Text.Show                    (Show (show))
 
 import           Control.Monad.Catch          (MonadThrow, SomeException)
 import qualified Control.Monad.Catch          as MonadThrow
 import           Control.Monad.Error.Class    (MonadError)
 import qualified Control.Monad.Error.Class    as MonadError
+#if !MIN_VERSION_base(4,13,0)
 import           Control.Monad.Fail           (MonadFail, fail)
+#endif
 import           Control.Monad.Fix            (MonadFix, fix)
 import           Control.Monad.Trans.Class    (MonadTrans (lift))
 
@@ -207,8 +194,6 @@ import qualified Control.Monad.Trans.Except   as ExceptT
 
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
-
-import           GHC.Real                     (Integral(mod), even, odd)
 
 import           Refined.Unsafe.Type          (Refined(Refined))
 import           Refined.These                (These(This,That,These))
@@ -222,17 +207,9 @@ import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))
 #endif
 
 #if HAVE_QUICKCHECK
-import           Data.String      (String)
-import           Data.Either      (isRight)
---import           Refined.Unsafe   (reallyUnsafeRefine)
-import           Data.Maybe       (Maybe(Just,Nothing))
 import           Test.QuickCheck  (Arbitrary, Gen)
 import qualified Test.QuickCheck  as QC
-import           Data.Typeable    (Typeable, showsTypeRep, typeRep)
-import           Data.Proxy       (Proxy(Proxy))
-import           GHC.Err          (error)
-import           Data.List        ((++))
-import           GHC.Num          ((+))
+import           Data.Typeable    (showsTypeRep, typeRep)
 #endif
 
 --------------------------------------------------------------------------------

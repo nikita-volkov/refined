@@ -59,12 +59,8 @@ module Refined.Unsafe
 
 --------------------------------------------------------------------------------
 
-import           Control.Exception            (Exception(displayException))
+import           Control.Exception            (displayException)
 import           Data.Coerce                  (coerce)
-import           Data.Either                  (either)
-import           Data.Function                (id)
-
-import           GHC.Err                      (error)
 
 import           Refined                      (Predicate, refine, (.>))
 import           Refined.Unsafe.Type          (Refined(Refined))

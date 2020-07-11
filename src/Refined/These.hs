@@ -93,7 +93,6 @@ import Data.Bifunctor  (Bifunctor(bimap, first, second))
 #endif
 import Data.Data       (Data)
 import Data.Maybe      (isJust, mapMaybe)
-import Data.Semigroup  (Semigroup((<>)))
 import Data.Typeable   (Typeable)
 import GHC.Generics    (Generic, Generic1)
 
