@@ -34,6 +34,7 @@
 --------------------------------------------------------------------------------
 
 {-# LANGUAGE AllowAmbiguousTypes        #-}
+{-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE DeriveFoldable             #-}
@@ -215,6 +216,25 @@ import           Refined.These                (These(This,That,These))
 import qualified Data.Text.Prettyprint.Doc    as PP
 import qualified Language.Haskell.TH.Syntax   as TH
 
+#if HAVE_AESON
+import           Control.Monad    ((<=<))
+import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))
+#endif
+
+#if HAVE_QUICKCHECK
+import           Data.String      (String)
+import           Data.Either      (isRight)
+--import           Refined.Unsafe   (reallyUnsafeRefine)
+import           Data.Maybe       (Maybe(Just,Nothing))
+import           Test.QuickCheck  (Arbitrary, Gen)
+import qualified Test.QuickCheck  as QC
+import           Data.Typeable    (Typeable, showsTypeRep, typeRep)
+import           Data.Proxy       (Proxy(Proxy))
+import           GHC.Err          (error)
+import           Data.List        ((++))
+import           GHC.Num          ((+))
+#endif
+
 --------------------------------------------------------------------------------
 
 -- $setup
@@ -292,6 +312,50 @@ instance (TH.Lift x) => TH.Lift (Refined p x) where
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped (Refined a) = [||Refined a||]
 #endif
+
+#if HAVE_AESON
+instance (FromJSON a, Predicate p a) => FromJSON (Refined p a) where
+  parseJSON = refineFail <=< parseJSON
+
+instance (ToJSON a, Predicate p a) => ToJSON (Refined p a) where
+  toJSON = toJSON . unrefine
+#endif /* HAVE_AESON */
+
+#if HAVE_QUICKCHECK
+instance forall p a. (Arbitrary a, Typeable a, Typeable p, Predicate p a) => Arbitrary (Refined p a) where
+  arbitrary = loop 0 QC.arbitrary
+    where
+      loop :: Int -> Gen a -> Gen (Refined p a)
+      loop !runs gen
+        | runs < 100 = do
+            m <- suchThatRefined gen
+            case m of
+              Just x -> do
+                pure x
+              Nothing -> do
+                loop (runs + 1) gen
+        | otherwise = error (refinedGenError (Proxy @p) (Proxy @a))
+
+refinedGenError :: (Typeable p, Typeable a)
+  => Proxy p -> Proxy a -> String
+refinedGenError p a = "arbitrary :: Refined ("
+  ++ typeName p
+  ++ ") ("
+  ++ typeName a
+  ++ "): Failed to generate a value that satisfied"
+  ++ " the predicate after 100 tries."
+
+suchThatRefined :: forall p a. (Predicate p a)
+  => Gen a -> Gen (Maybe (Refined p a))
+suchThatRefined gen = do
+  m <- QC.suchThatMaybe gen (reifyPredicate @p @a)
+  case m of
+    Nothing -> pure Nothing
+    Just x -> pure (Just (Refined x))
+
+typeName :: Typeable a => Proxy a -> String
+typeName = flip showsTypeRep "" . typeRep
+#endif /* HAVE_QUICKCHECK */
 
 --------------------------------------------------------------------------------
 
