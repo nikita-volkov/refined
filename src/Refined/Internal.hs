@@ -145,6 +145,7 @@ module Refined.Internal
     , RefineAndException
     , RefineOrException
     , RefineOtherException
+    , RefineSomeException
     )
   , displayRefineException
 
@@ -153,6 +154,7 @@ module Refined.Internal
   , RefineM, refineM, runRefineM
   , throwRefine, catchRefine
   , throwRefineOtherException
+  , throwRefineSomeException
 
   , (|>)
   , (.>)
@@ -191,7 +193,7 @@ import           Data.Void                    (Void)
 import           Text.Read                    (Read (readsPrec), lex, readParen)
 import           Text.Show                    (Show (show))
 
-import           Control.Monad.Catch          (MonadThrow)
+import           Control.Monad.Catch          (MonadThrow, SomeException)
 import qualified Control.Monad.Catch          as MonadThrow
 import           Control.Monad.Error.Class    (MonadError)
 import qualified Control.Monad.Error.Class    as MonadError
@@ -293,7 +295,7 @@ instance (Read x, Predicate p x) => Read (Refined p x) where
 
 instance (TH.Lift x) => TH.Lift (Refined p x) where
   lift (Refined a) = [|Refined a|]
-#if MIN_VERSION_template_haskell(0,16,0)
+#if MIN_VERSION_template_haskell(2,16,0)
   liftTyped (Refined a) = [||Refined a||]
 #endif
 
@@ -985,6 +987,13 @@ data RefineException
     , _RefineException_message  :: !(PP.Doc Void)
       -- ^ A custom message to display.
     }
+  | -- | A 'RefineException' for failures involving all other predicates with custom exception.
+    RefineSomeException
+    { _RefineException_typeRep   :: !TypeRep
+      -- ^ The 'TypeRep' of the predicate that failed.
+    , _RefineException_Exception :: !SomeException
+      -- ^ A custom exception.
+    }
   deriving (Generic)
 
 instance Show RefineException where
@@ -999,6 +1008,14 @@ newline = "\n"
 -- | Display a 'RefineException' as a @'PP.Doc' ann@
 displayRefineException :: RefineException -> PP.Doc ann
 displayRefineException = \case
+  RefineSomeException tr ex ->
+    [ "The predicate ("
+    , PP.pretty (show tr)
+    , ") does not hold: "
+    , newline
+    , twoSpaces
+    , PP.pretty (show ex)
+    ] |> mconcat
   RefineOtherException tr msg ->
     [ "The predicate ("
     , PP.pretty (show tr)
@@ -1146,6 +1163,21 @@ throwRefineOtherException
   -> RefineT m a
 throwRefineOtherException rep
   = RefineOtherException rep .> throwRefine
+
+-- | A handler for a @'RefineException'@.
+--
+--   'throwRefineSomeException' is useful for defining what
+--   behaviour 'validate' should have in the event of a predicate failure
+--   with a specific exception.
+throwRefineSomeException
+  :: (Monad m)
+  => TypeRep
+  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
+  -> SomeException
+  -- ^ A custom exception.
+  -> RefineT m a
+throwRefineSomeException rep
+  = RefineSomeException rep .> throwRefine
 
 --------------------------------------------------------------------------------
 

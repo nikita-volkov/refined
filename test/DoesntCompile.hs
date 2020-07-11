@@ -24,10 +24,14 @@ main :: IO ()
 main = do
   let none = $$(refineTH @None @Int 3)
   let none_ = $$(refineTH @None @Int undefined)
+  let noneE = $$(refineTH @NoneE @Int 3)
+  let noneE_ = $$(refineTH @NoneE @Int undefined)
 
   foldMap catchTypeError
     [ none
     , none_
+    , noneE
+    , noneE_
     ]
 
 numShouldFailToCompile :: Int
