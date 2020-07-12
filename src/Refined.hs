@@ -104,6 +104,8 @@ module Refined
   , Odd(..)
   , Even(..)
   , DivisibleBy(..)
+  , NaN(..)
+  , Infinite(..)
   , Positive
   , NonPositive
   , Negative
@@ -942,6 +944,34 @@ instance (Integral x) => Predicate Odd x where
 
 --------------------------------------------------------------------------------
 
+-- | A 'Predicate' ensuring that the value is IEEE "not-a-number" (NaN).
+data NaN = NaN
+  deriving (Generic)
+
+instance (RealFloat x) => Predicate NaN x where
+  validate p x = do
+    if isNaN x
+    then Nothing
+    else throwRefineOtherException
+         (typeOf p)
+         "Value is not IEEE \"not-a-number\" (NaN)."
+
+--------------------------------------------------------------------------------
+
+-- | A 'Predicate' ensuring that the value is IEEE infinity or negative infinity.
+data Infinite = Infinite
+  deriving (Generic)
+
+instance (RealFloat x) => Predicate Infinite x where
+  validate p x = do
+    if isInfinite x
+    then Nothing
+    else throwRefineOtherException
+         (typeOf p)
+         "Value is not IEEE infinity or negative infinity."
+
+--------------------------------------------------------------------------------
+
 -- | A 'Predicate' ensuring that the value is even.
 --
 --   >>> isRight (refine @Even @Int 32)
@@ -979,6 +1009,9 @@ type ZeroToOne = FromTo 0 1
 
 -- | A 'Predicate' ensuring that the value is not equal to zero.
 type NonZero = NotEqualTo 0
+
+-- | A 'Predicate' ensuring that the type is non-empty.
+type Empty = SizeEqualTo 0
 
 -- | A 'Predicate' ensuring that the type is non-empty.
 type NonEmpty = SizeGreaterThan 0

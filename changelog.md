@@ -14,6 +14,8 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
   specific validation exceptions.
   Thanks to @haroldcarr for adding this.
 - RefineXorException constructor.
+- `Empty` and `NotEmpty` predicates.
+- `NaN` and `Infinite` predicates for floating-point numbers.
 
 ### Changed
 - lower bound on mtl to 2.2.2 due to use of liftEither. 
