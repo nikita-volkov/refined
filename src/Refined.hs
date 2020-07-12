@@ -611,7 +611,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --   >>> isLeft (refine @(Xor (LessThan 3) (EqualTo 2)) @Int 2)
 --   True
 --
---   >>> isLeft (refine @(Or Even Even) @Int 2)
+--   >>> isLeft (refine @(Xor Even Even) @Int 2)
 --   True
 --
 --   @since 0.5
@@ -1114,10 +1114,10 @@ instance (Integral x) => Predicate Odd x where
 
 -- | A 'Predicate' ensuring that the value is IEEE "not-a-number" (NaN).
 --
---   >>> isRight (refine @NaN @Double) (0/0)
+--   >>> isRight (refine @NaN @Double (0/0))
 --   True
 --
---   >>> isLeft (refine @NaN @Double) 13.9
+--   >>> isLeft (refine @NaN @Double 13.9)
 --   True
 --
 --   @since 0.5
@@ -1140,13 +1140,13 @@ instance (RealFloat x) => Predicate NaN x where
 
 -- | A 'Predicate' ensuring that the value is IEEE infinity or negative infinity.
 --
---   >>> isRight (refine @Infinite @Double) (1/0)
+--   >>> isRight (refine @Infinite @Double (1/0))
 --   True
 --
---   >>> isRight (refine @Infinite @Double) (-1/0)
+--   >>> isRight (refine @Infinite @Double (-1/0))
 --   True
 --
---   >>> isLeft (refine @Infinite @Double) 13.20
+--   >>> isLeft (refine @Infinite @Double 13.20)
 --   True
 --
 --   @since 0.5
