@@ -114,14 +114,14 @@ module Refined
   , ZeroToOne
   , NonZero
 
-    -- * Size predicates
+    -- * Foldable predicates
+    -- ** Size predicates
   , SizeLessThan(..)
   , SizeGreaterThan(..)
   , SizeEqualTo(..)
   , Empty
   , NonEmpty
-
-    -- * IsList predicates
+    -- ** Ordering predicates
   , Ascending(..)
   , Descending(..)
 
