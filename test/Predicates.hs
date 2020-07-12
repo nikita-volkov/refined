@@ -10,7 +10,7 @@ module Predicates
 
 import Refined
 import Data.Typeable (typeOf)
-import Control.Exception (Exception)
+import Control.Exception (Exception, SomeException(..))
 
 data None = None
 
@@ -22,4 +22,4 @@ data NoneException = NoneException deriving Show
 instance Exception NoneException
 
 instance Predicate NoneE x where
-  validate p _ = throwRefineSomeException (typeOf p) NoneException
+  validate p _ = throwRefineSomeException (typeOf p) (SomeException NoneException)

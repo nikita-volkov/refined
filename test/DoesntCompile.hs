@@ -1,5 +1,6 @@
 {-# language
     AllowAmbiguousTypes
+  , ExistentialQuantification
   , FlexibleInstances
   , MultiParamTypeClasses
   , OverloadedStrings
@@ -8,6 +9,8 @@
   , TypeApplications
   #-}
 
+-- unfortunately this doesn't work because
+-- it uses TH, not type errors
 {-# options_ghc -fdefer-type-errors #-}
 
 module Main (main) where
@@ -22,23 +25,26 @@ import qualified Control.Exception as E
 
 main :: IO ()
 main = do
-  let none = $$(refineTH @None @Int 3)
-  let none_ = $$(refineTH @None @Int undefined)
-  let noneE = $$(refineTH @NoneE @Int 3)
-  let noneE_ = $$(refineTH @NoneE @Int undefined)
+  let shouldntCompiles =
+        [ Something ($$(refineTH @None @Int 3))
+        , Something ($$(refineTH @None @Int undefined))
+        , Something ($$(refineTH @NoneE @Int 3))
+        , Something ($$(refineTH @NoneE @Int undefined))
+        ]
 
-  foldMap catchTypeError
-    [ none
-    , none_
-    , noneE
-    , noneE_
-    ]
+  foldMap (\(Something x) -> catchTypeError x) shouldntCompiles
 
-numShouldFailToCompile :: Int
-numShouldFailToCompile = 2
+  let numShouldntCompiles = length shouldntCompiles
+
+  actualDidntCompiles <- readIORef failedToCompile
+
+  assert (numShouldntCompiles == actualDidntCompiles) (pure ())
 
 failedToCompile :: IORef Int
 failedToCompile = unsafePerformIO $ newIORef 0
+{-# NOINLINE failedToCompile #-}
+
+data Something = forall a. Something a
 
 catchTypeError :: a -> IO ()
 catchTypeError x = E.catch
