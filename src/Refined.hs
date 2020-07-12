@@ -552,7 +552,7 @@ data SizeLessThan (n :: Nat) = SizeLessThan
 
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
   validate p x = sized p (x, "Foldable") length ((<), "less than")
-
+-- @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((<), "less than")
 
@@ -578,6 +578,7 @@ data SizeGreaterThan (n :: Nat) = SizeGreaterThan
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
   validate p x = sized p (x, "Foldable") length ((>), "greater than")
 
+-- @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((>), "greater than")
 
@@ -603,6 +604,7 @@ data SizeEqualTo (n :: Nat) = SizeEqualTo
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
   validate p x = sized p (x, "Foldable") length ((==), "equal to")
 
+-- @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
   validate p x = sized p (x, "Text") Text.length ((==), "equal to")
 
