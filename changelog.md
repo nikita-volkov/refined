@@ -13,6 +13,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - RefineSomeException constructor. Enables recovering
   specific validation exceptions.
   Thanks to @haroldcarr for adding this.
+- RefineXorException constructor.
 
 ### Changed
 - lower bound on mtl to 2.2.2 due to use of liftEither. 
