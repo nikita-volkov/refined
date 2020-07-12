@@ -117,6 +117,7 @@ module Refined
   , SizeLessThan(..)
   , SizeGreaterThan(..)
   , SizeEqualTo(..)
+  , Empty
   , NonEmpty
 
     -- * IsList predicates
