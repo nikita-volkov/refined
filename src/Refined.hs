@@ -395,11 +395,13 @@ refineError = refine .> either MonadError.throwError pure
 --   >     In an equation for ‘it’:
 --   >         it = $$(refineTH 0) :: Refined Positive Int
 --
---   If it's not evident, the example above indicates a compile-time failure,
---   which means that the checking was done at compile-time, thus introducing a
---   zero runtime overhead compared to a plain value construction.
+--   The example above indicates a compile-time failure,
+--   which means that the checking was done at compile-time,
+--   thus introducing a zero-runtime overhead compared to
+--   a plain value construction.
 --
---   It may be useful to use this function with the `th-lift-instances` package at https://hackage.haskell.org/package/th-lift-instances/
+--   /Note/: It may be useful to use this function with the
+--   <https://hackage.haskell.org/package/th-lift-instances/ th-lift-instances package>.
 --
 --   @since 0.1.0.0
 refineTH :: (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
