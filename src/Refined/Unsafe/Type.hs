@@ -2,7 +2,7 @@
 
 -- Copyright © 2015 Nikita Volkov
 -- Copyright © 2018 Remy Goldschmidt
--- Copyright © 2019 chessai
+-- Copyright © 2020 chessai
 --
 -- Permission is hereby granted, free of charge, to any person
 -- obtaining a copy of this software and associated documentation
