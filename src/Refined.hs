@@ -425,6 +425,12 @@ class (Typeable p) => Predicate p x where
   --   such, the 'Maybe' here should be interpreted to mean
   --   the presence or absence of a 'RefineException', and
   --   nothing else.
+  --
+  --   /Note/: An implementation of 'validate' should not
+  --   case on its first argument, @p@. This is due to an
+  --   implementation detail of the 'refine' function. See
+  --   <https://github.com/nikita-volkov/refined/issues/56 this issue>
+  --   for more details.
   validate :: p -> x -> Maybe RefineException
 
 --------------------------------------------------------------------------------
