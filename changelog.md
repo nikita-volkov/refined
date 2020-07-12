@@ -21,6 +21,9 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ### Removed
 - `Refined.Internal` module
 - Orphan modules
+- `RefineT`. It was a needless abstraction that just made the
+  library harder to learn and use, providing little benefit
+  over `Maybe RefineException`.
 
 ## [0.4.4] - 2019-10-18
 ### Added

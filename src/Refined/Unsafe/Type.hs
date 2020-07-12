@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RoleAnnotations            #-}
+{-# LANGUAGE TemplateHaskell            #-}
 
 --------------------------------------------------------------------------------
 
@@ -44,6 +46,7 @@ module Refined.Unsafe.Type
   ) where
 
 import           Control.DeepSeq              (NFData)
+import qualified Language.Haskell.TH.Syntax   as TH
 
 -- | A refinement type, which wraps a value of type @x@,
 newtype Refined p x = Refined x
@@ -52,3 +55,10 @@ newtype Refined p x = Refined x
   deriving stock (Foldable)
 
 type role Refined nominal nominal
+
+instance (TH.Lift x) => TH.Lift (Refined p x) where
+  lift (Refined a) = [|Refined a|]
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped (Refined a) = [||Refined a||]
+#endif
+
