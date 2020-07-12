@@ -11,7 +11,6 @@ module Main (main) where
 
 import Test.QuickCheck
 import Refined
-import Refined.Orphan
 
 main :: IO ()
 main = mapM_ quickCheck
