@@ -1136,10 +1136,11 @@ showTree = PP.pretty . unlines . showOne "  " "" ""
         [ leader
           <> arm
           <> tie
-          <> "The predidcate ("
+          <> "The predicate ("
           <> show tr
           <> ") failed with the exception: "
           <> displayException e
+          <> "."
         ]
       NodeOther tr p ->
         [ leader
@@ -1149,16 +1150,16 @@ showTree = PP.pretty . unlines . showOne "  " "" ""
           <> show tr
           <> ") failed with the message: "
           <> show p
+          <> "."
         ]
       NodeNot tr ->
         [ leader
           <> arm
           <> tie
-          <> "The negation of the predicate ("
+          <> "The predicate ("
           <> show tr
           <> ") does not hold."
         ]
-      -- TODO: not is bad!?
       NodeOr tr rest -> nodeRep tr : showChildren rest (leader <> extension)
       NodeAnd tr rest -> nodeRep tr : showChildren rest (leader <> extension)
       -- can be empty since both can be satisfied
