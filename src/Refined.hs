@@ -1114,6 +1114,12 @@ instance (Integral x) => Predicate Odd x where
 
 -- | A 'Predicate' ensuring that the value is IEEE "not-a-number" (NaN).
 --
+--   >>> isRight (refine @NaN @Double) (0/0)
+--   True
+--
+--   >>> isLeft (refine @NaN @Double) 13.9
+--   True
+--
 --   @since 0.5
 data NaN
   = NaN -- ^ @since 0.5
@@ -1133,6 +1139,15 @@ instance (RealFloat x) => Predicate NaN x where
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is IEEE infinity or negative infinity.
+--
+--   >>> isRight (refine @Infinite @Double) (1/0)
+--   True
+--
+--   >>> isRight (refine @Infinite @Double) (-1/0)
+--   True
+--
+--   >>> isLeft (refine @Infinite @Double) 13.20
+--   True
 --
 --   @since 0.5
 data Infinite
