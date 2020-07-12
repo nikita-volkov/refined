@@ -573,6 +573,9 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --   >>> isRight (refine @(Or (LessThan 3) (GreaterThan 3)) @Int 2)
 --   True
 --
+--   >>> isRight (refine @(Or Even Even) @Int 4)
+--   True
+--
 --   @since 0.1.0.0
 data Or l r
   = Or -- ^ @since 0.4.2
@@ -600,6 +603,16 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --------------------------------------------------------------------------------
 
 -- | The exclusive disjunction of two predicates.
+--
+--
+--   >>> isRight (refine @(Xor Even Odd) @Int 3)
+--   True
+--
+--   >>> isLeft (refine @(Xor (LessThan 3) (EqualTo 2)) @Int 2)
+--   True
+--
+--   >>> isLeft (refine @(Or Even Even) @Int 2)
+--   True
 --
 --   @since 0.5
 data Xor l r
