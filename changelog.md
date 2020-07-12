@@ -37,6 +37,9 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
   over `Maybe RefineException`.
   Thanks to @nikita-volkov for helping me see the light.
 
+### Deprecated
+- Refined.These module in favour of Data.These from these-skinny
+
 ## [0.4.4] - 2019-10-18
 ### Added
 - `refine_`

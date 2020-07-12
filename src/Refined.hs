@@ -184,7 +184,7 @@ import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
 
 import           Refined.Unsafe.Type          (Refined(Refined))
-import           Refined.These                (These(This,That,These))
+import           Data.These                   (These(This,That,These))
 
 import qualified Data.Text.Prettyprint.Doc    as PP
 import qualified Language.Haskell.TH.Syntax   as TH
