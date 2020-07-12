@@ -161,6 +161,8 @@ import           Data.Function                (fix)
 import           Data.Proxy                   (Proxy(Proxy))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as Text
+import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Lazy         as BL
 import           Data.Typeable                (TypeRep, Typeable, typeOf)
 import           Data.Void                    (Void)
 
@@ -556,6 +558,14 @@ instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
 instance (KnownNat n) => Predicate (SizeLessThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((<), "less than")
 
+-- @since 0.5
+instance (KnownNat n) => Predicate (SizeLessThan n) BS.ByteString where
+  validate p x = sized p (x, "ByteString") BS.length ((<), "less than")
+
+-- @since 0.5
+instance (KnownNat n) => Predicate (SizeLessThan n) BL.ByteString where
+  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((<), "less than")
+
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value has a length
@@ -582,6 +592,14 @@ instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
 instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((>), "greater than")
 
+-- @since 0.5
+instance (KnownNat n) => Predicate (SizeGreaterThan n) BS.ByteString where
+  validate p x = sized p (x, "ByteString") BS.length ((>), "greater than")
+
+-- @since 0.5
+instance (KnownNat n) => Predicate (SizeGreaterThan n) BL.ByteString where
+  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((>), "greater than")
+
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value has a length
@@ -607,6 +625,14 @@ instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
 -- @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
   validate p x = sized p (x, "Text") Text.length ((==), "equal to")
+
+-- @since 0.5
+instance (KnownNat n) => Predicate (SizeEqualTo n) BS.ByteString where
+  validate p x = sized p (x, "ByteString") BS.length ((==), "equal to")
+
+-- @since 0.5
+instance (KnownNat n) => Predicate (SizeEqualTo n) BL.ByteString where
+  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((==), "equal to")
 
 --------------------------------------------------------------------------------
 

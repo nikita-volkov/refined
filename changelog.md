@@ -7,6 +7,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ## [0.5] - 2020-XX-XX
 ### Added
 - sized Predicate instances for `Text`
+- sized Predicate instances for strict and lazy `ByteString`
 - INLINABLE pragmas on `refine_` `reifyPredicate` 
 - `NFData` instance for `Refined`
 - RefineSomeException constructor. Enables recovering
