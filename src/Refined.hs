@@ -1255,6 +1255,7 @@ type NonEmpty = SizeGreaterThan 0
 --
 -- @since 0.2.0.0
 class Weaken from to where
+  -- | @since 0.2.0.0
   weaken :: Refined from x -> Refined to x
   weaken = coerce
 
