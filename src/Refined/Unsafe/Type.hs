@@ -37,7 +37,7 @@
 --------------------------------------------------------------------------------
 
 -- | This module exports the 'Refined' type with its
---   constructor. This is very risky! In particular, the 'Coercible'
+--   constructor. This is very risky! In particular, the 'Data.Coerce.Coercible'
 --   instances will be visible throughout the importing module.
 --   It is usually better to build the necessary coercions locally
 --   using the utilities in "Refined.Unsafe", but in some cases
@@ -50,7 +50,7 @@ module Refined.Unsafe.Type
 import           Control.DeepSeq              (NFData)
 import qualified Language.Haskell.TH.Syntax   as TH
 
--- | A refinement type, which wraps a value of type @x@,
+-- | A refinement type, which wraps a value of type @x@.
 --
 --   @since 0.1.0.0
 newtype Refined p x = Refined x

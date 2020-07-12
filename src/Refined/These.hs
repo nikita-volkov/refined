@@ -31,20 +31,9 @@
 
 --------------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE InstanceSigs       #-}
-
---------------------------------------------------------------------------------
-
--- | This module is defined internally to avoid using the 'these'
---   package, which brings in a lot of very heavy and unnecessary
---   transitive dependencies. We export the type and constructors
---   here, in case a user should need it.
---   We provide a small API for working with the 'These' type here.
---   If one should need a fuller API, see https://hackage.haskell.org/package/these
---   Converting to/from the two types should be trivial, as the
---   data constructors are exported from both.
+-- | This module is deprecated. It will be removed in a future
+--   release. Use the 'Data.These' module from the these-skinny
+--   package instead.
 module Refined.These
   {-# DEPRECATED "This module will be removed in the next majour release. Use Data.These from the these-skinny package instead." #-}
   ( module Data.These

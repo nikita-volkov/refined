@@ -218,12 +218,12 @@ import           Data.Typeable    (showsTypeRep, typeRep)
 infixl 0 |>
 infixl 9 .>
 
--- | Helper function, stolen from the 'flow' package.
+-- | Helper function, stolen from the flow package.
 (|>) :: a -> (a -> b) -> b
 (|>) = flip ($)
 {-# INLINE (|>) #-}
 
--- | Helper function, stolen from the 'flow' package.
+-- | Helper function, stolen from the flow package.
 (.>) :: (a -> b) -> (b -> c) -> a -> c
 f .> g = \x -> g (f x)
 {-# INLINE (.>) #-}
