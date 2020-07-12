@@ -72,6 +72,7 @@ library
     Haskell2010
   build-depends:
       base             >= 4.11 && < 4.15
+    , bytestring       >= 0.10 && < 0.11
     , deepseq          >= 1.4 && < 1.5
     , exceptions       >= 0.8 && < 0.11
     , mtl              >= 2.2.2 && < 2.3

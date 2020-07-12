@@ -87,6 +87,8 @@ module Refined
   , type (&&)
   , Or(..)
   , type (||)
+  , Xor(..)
+  , type (^)
 
     -- * Identity predicate
   , IdPred(..)
@@ -137,6 +139,7 @@ module Refined
     ( RefineNotException
     , RefineAndException
     , RefineOrException
+    , RefineXorException
     , RefineOtherException
     , RefineSomeException
     )
@@ -532,6 +535,27 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
     case (left, right) of
       (Just l, Just r) -> Just (RefineOrException (typeOf p) l r)
       _                -> Nothing
+
+--------------------------------------------------------------------------------
+
+-- | The exclusive disjunction of two predicates.
+
+data Xor l r = Xor
+  deriving (Generic, Generic1)
+
+infixr 8 ^
+-- | The exclusive disjunction of two predicates.
+type (^) = Xor
+
+instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
+         ) => Predicate (Xor l r) x where
+  validate p x = do
+    let left = validate @l undefined x
+    let right = validate @r undefined x
+    case (left, right) of
+      (Nothing, Nothing) -> Just (RefineXorException (typeOf p) Nothing)
+      (Just  l, Just  r) -> Just (RefineXorException (typeOf p) (Just (l, r)))
+      _ -> Nothing
 
 --------------------------------------------------------------------------------
 
@@ -1066,11 +1090,17 @@ data RefineException
       -- ^ The 'RefineException' for the @l@ failure.
     }
 
+  | -- | A 'RefineException' for failures involving the 'Xor' predicate.
+    RefineXorException
+    { _RefineException_typeRep   :: !TypeRep
+    , _RefineException_children  :: !(Maybe (RefineException, RefineException))
+    }
+
   | -- | A 'RefineException' for failures involving all other predicates.
     RefineOtherException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the predicate that failed.
-    , _RefineException_message  :: !(PP.Doc Void)
+    , _RefineException_message   :: !(PP.Doc Void)
       -- ^ A custom message to display.
     }
   | -- | A 'RefineException' for failures involving all other predicates with custom exception.
@@ -1085,67 +1115,95 @@ data RefineException
 instance Show RefineException where
   show = PP.pretty .> show
 
-twoSpaces, newline :: PP.Doc ann
-{-# INLINE twoSpaces #-}
-{-# INLINE newline   #-}
-twoSpaces = "  "
-newline = "\n"
+data ExceptionTree a
+  = NodeNone
+  | NodeSome !TypeRep SomeException
+  | NodeOther !TypeRep !(PP.Doc Void)
+  | NodeNot !TypeRep
+  | NodeOr !TypeRep [ExceptionTree a]
+  | NodeAnd !TypeRep [ExceptionTree a]
+  | NodeXor !TypeRep [ExceptionTree a]
+
+showTree :: ExceptionTree RefineException -> PP.Doc ann
+showTree = PP.pretty . unlines . showOne "  " "" ""
+  where
+    showOne :: String -> String -> String -> ExceptionTree RefineException -> [String]
+    showOne leader tie arm = \case
+      NodeNone ->
+        [
+        ]
+      NodeSome tr e ->
+        [ leader
+          <> arm
+          <> tie
+          <> "The predidcate ("
+          <> show tr
+          <> ") failed with the exception: "
+          <> displayException e
+        ]
+      NodeOther tr p ->
+        [ leader
+          <> arm
+          <> tie
+          <> "The predicate ("
+          <> show tr
+          <> ") failed with the message: "
+          <> show p
+        ]
+      NodeNot tr ->
+        [ leader
+          <> arm
+          <> tie
+          <> "The negation of the predicate ("
+          <> show tr
+          <> ") does not hold."
+        ]
+      -- TODO: not is bad!?
+      NodeOr tr rest -> nodeRep tr : showChildren rest (leader <> extension)
+      NodeAnd tr rest -> nodeRep tr : showChildren rest (leader <> extension)
+      -- can be empty since both can be satisfied
+      NodeXor tr [] ->
+        [ leader
+          <> arm
+          <> tie
+          <> "The predicate ("
+          <> show tr
+          <> ") does not hold, because both predicates were satisfied."
+        ]
+      NodeXor tr rest -> nodeRep tr : showChildren rest (leader <> extension)
+      where
+        nodeRep :: TypeRep -> String
+        -- TODO: make tr bold
+        nodeRep tr = leader <> arm <> tie <> show tr
+
+        extension :: String
+        extension = case arm of
+          ""  -> ""
+          "└" -> "    "
+          _   -> "│   "
+
+    showChildren :: [ExceptionTree RefineException] -> String -> [String]
+    showChildren children leader =
+      let arms = replicate (length children - 1) "├" <> ["└"]
+      in concat (zipWith (showOne leader "── ") arms children)
+
+refineExceptionToTree :: RefineException -> ExceptionTree RefineException
+refineExceptionToTree = go
+  where
+    go = \case
+      RefineSomeException tr e -> NodeSome tr e
+      RefineOtherException tr p -> NodeOther tr p
+      RefineNotException tr -> NodeNot tr
+      RefineOrException tr l r -> NodeOr tr [go l, go r]
+      RefineAndException tr (This l) -> NodeAnd tr [go l]
+      RefineAndException tr (That r) -> NodeAnd tr [go r]
+      RefineAndException tr (These l r) -> NodeAnd tr [go l, go r]
+      RefineXorException tr Nothing -> NodeXor tr []
+      RefineXorException tr (Just (l, r)) -> NodeXor tr [go l, go r]
 
 -- | Display a 'RefineException' as a @'PP.Doc' ann@
 displayRefineException :: RefineException -> PP.Doc ann
-displayRefineException = \case
-  RefineSomeException tr ex ->
-    [ "The predicate ("
-    , PP.pretty (show tr)
-    , ") does not hold: "
-    , newline
-    , twoSpaces
-    , PP.pretty (show ex)
-    ] |> mconcat
-  RefineOtherException tr msg ->
-    [ "The predicate ("
-    , PP.pretty (show tr)
-    , ") does not hold: "
-    , newline
-    , twoSpaces
-    , PP.pretty (show msg)
-    ] |> mconcat
-  RefineNotException tr ->
-    [ "The negation of the predicate ("
-    , PP.pretty (show tr)
-    , ") does not hold:"
-    , newline
-    , twoSpaces
-    ] |> mconcat
-  RefineOrException tr orLChild orRChild ->
-    [ "Both subpredicates failed in: ("
-    , PP.pretty (show tr)
-    , "):"
-    , newline
-    , twoSpaces
-    , displayRefineException orLChild
-    , newline
-    , twoSpaces
-    , displayRefineException orRChild
-    , newline
-    , twoSpaces
-    ] |> mconcat
-  RefineAndException tr andChild ->
-    (
-      [ "The predicate ("
-      , PP.pretty (show tr)
-      , ") does not hold:"
-      , newline
-      , twoSpaces
-      ] |> mconcat
-    )
-    <> case andChild of
-         This a -> mconcat [ "The left subpredicate does not hold:", newline, twoSpaces, displayRefineException a, newline ]
-         That b -> mconcat [ "The right subpredicate does not hold:", newline, twoSpaces, displayRefineException b, newline ]
-         These a b -> mconcat [ twoSpaces, "Neither subpredicate holds: ", newline
-                              , twoSpaces, displayRefineException a, newline
-                              , twoSpaces, displayRefineException b, newline
-                              ]
+displayRefineException = refineExceptionToTree .> showTree
 
 -- | Pretty-print a 'RefineException'.
 instance PP.Pretty RefineException where
@@ -1224,8 +1282,7 @@ sized p (x, typ) lenF (cmp, cmpDesc) = do
     let msg =
           [ "Size of ", typ, " is not ", cmpDesc
           , PP.pretty x'
-          , newline
-          , twoSpaces
+          , "\n  "
           , "Size is: "
           , PP.pretty sz
           ] |> mconcat
