@@ -76,6 +76,8 @@ import           Data.Coerce                  (Coercible)
 --   does not satisfy the predicate.
 --
 --   WARNING: this function is not total!
+--
+--   @since 0.2.0.0
 unsafeRefine :: (Predicate p x) => x -> Refined p x
 unsafeRefine = either (error . displayException) id . refine
 {-# INLINABLE unsafeRefine #-}
@@ -84,17 +86,24 @@ unsafeRefine = either (error . displayException) id . refine
 --   ignoring any refinements! Use this only
 --   when you can manually prove that the refinement
 --   holds.
+--
+--   @since 0.3.0.0
 reallyUnsafeRefine :: x -> Refined p x
 reallyUnsafeRefine = coerce
 {-# INLINE reallyUnsafeRefine #-}
 
 -- | A coercion between a type and any refinement of that type.
--- See "Data.Type.Coercion" for functions manipulating coercions.
+--   See "Data.Type.Coercion" for functions manipulating
+--   coercions.
+--
+--   @since 0.3.0.0
 reallyUnsafeUnderlyingRefined :: Coercion x (Refined p x)
 reallyUnsafeUnderlyingRefined = Coercion
 
--- | A coercion between two 'Refined' types, magicking up the claim
--- that one predicate is entirely equivalent to another.
+-- | A coercion between two 'Refined' types, magicking up the
+--   claim that one predicate is entirely equivalent to another.
+--
+--   @since 0.3.0.0
 reallyUnsafePredEquiv :: Coercion (Refined p x) (Refined q x)
 reallyUnsafePredEquiv = Coercion
 -- Note: reallyUnsafePredEquiv =
@@ -110,6 +119,8 @@ reallyUnsafePredEquiv = Coercion
 -- reallyUnsafePredEquiv :: Coercion (Refined p x) (Refined q x)
 -- reallyUnsafePredEquiv = reallyUnsafeAllUnderlyingRefined Coercion
 -- @
+--
+--   @since 0.3.0.0
 reallyUnsafeAllUnderlyingRefined
   :: ((forall x y p. (Coercible x y => Coercible y (Refined p x))) => r) -> r
 -- Why is this constraint so convoluted? Because otherwise the constraint

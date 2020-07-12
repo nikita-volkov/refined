@@ -51,13 +51,25 @@ import           Control.DeepSeq              (NFData)
 import qualified Language.Haskell.TH.Syntax   as TH
 
 -- | A refinement type, which wraps a value of type @x@,
+--
+--   @since 0.1.0.0
 newtype Refined p x = Refined x
-  deriving newtype (Eq, Ord, NFData)
-  deriving stock (Show)
-  deriving stock (Foldable)
+  deriving newtype
+    ( Eq -- ^ @since 0.1.0.0
+    , Ord -- ^ @since 0.1.0.0
+    , NFData -- ^ @since 0.5
+    )
+  deriving stock
+    ( Show -- ^ @since 0.1.0.0
+    )
+  deriving stock
+    ( Foldable -- ^ @since 0.2
+    )
 
+-- | @since 0.3.0.0
 type role Refined nominal nominal
 
+-- | @since 0.1.0.0
 instance (TH.Lift x) => TH.Lift (Refined p x) where
   lift (Refined a) = [|Refined a|]
 #if MIN_VERSION_template_haskell(2,16,0)

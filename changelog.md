@@ -16,6 +16,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - RefineXorException constructor.
 - `Empty` and `NotEmpty` predicates.
 - `NaN` and `Infinite` predicates for floating-point numbers.
+- @since pragmas to EVERYTHING.
 
 ### Changed
 - lower bound on mtl to 2.2.2 due to use of liftEither. 
@@ -72,11 +73,11 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - Make all predicates unary data constructors, instead of nullary,
   and export those newly added constructors.
 
-## [0.4.1.0] - 2019-04-15
+## [0.4.1] - 2019-04-15
 ### Fixed
 - Serious regression where `Not p` ~ `p`. Thanks to @k0ral who reported this.
 
-## [0.4.0.0] - 2019-03-18
+## [0.4] - 2019-03-18
 ### Added
 - 'NegativeFromTo', a Predicate that ensures a numeric value is within a range [a,b],
   where a < 0 and b >= a.

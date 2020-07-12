@@ -264,6 +264,8 @@ decreasing = dec . foldl' go Empty where
 --------------------------------------------------------------------------------
 
 -- | This instance makes sure to check the refinement.
+--
+--   @since 0.1.0.0
 instance (Read x, Predicate p x) => Read (Refined p x) where
   readsPrec d = readParen (d > 10) $ \r1 -> do
     ("Refined", r2) <- lex r1
@@ -273,14 +275,17 @@ instance (Read x, Predicate p x) => Read (Refined p x) where
       Left  _   -> []
 
 #if HAVE_AESON
+-- | @since 0.4
 instance (FromJSON a, Predicate p a) => FromJSON (Refined p a) where
   parseJSON = refineFail <=< parseJSON
 
+-- | @since 0.4
 instance (ToJSON a, Predicate p a) => ToJSON (Refined p a) where
   toJSON = toJSON . unrefine
 #endif /* HAVE_AESON */
 
 #if HAVE_QUICKCHECK
+-- | @since 0.4
 instance forall p a. (Arbitrary a, Typeable a, Typeable p, Predicate p a) => Arbitrary (Refined p a) where
   arbitrary = loop 0 QC.arbitrary
     where
@@ -320,6 +325,8 @@ typeName = flip showsTypeRep "" . typeRep
 
 -- | A smart constructor of a 'Refined' value.
 --   Checks the input value at runtime.
+--
+--   @since 0.1.0.0
 refine :: (Predicate p x) => x -> Either RefineException (Refined p x)
 refine x = do
   let predicateByResult :: Either RefineException (Refined p x) -> p
@@ -333,6 +340,8 @@ refine x = do
 --   This _can_ be useful when you only need to validate
 --   that some value at runtime satisfies some predicate.
 --   See also 'reifyPredicate'.
+--
+--   @since 0.4.4
 refine_ :: forall p x. (Predicate p x) => x -> Either RefineException x
 refine_ = refine @p @x .> coerce
 {-# INLINABLE refine_ #-}
@@ -340,6 +349,8 @@ refine_ = refine @p @x .> coerce
 -- | Constructs a 'Refined' value at run-time,
 --   calling 'Control.Monad.Catch.throwM' if the value
 --   does not satisfy the predicate.
+--
+--   @since 0.2.0.0
 refineThrow :: (Predicate p x, MonadThrow m) => x -> m (Refined p x)
 refineThrow = refine .> either MonadThrow.throwM pure
 {-# INLINABLE refineThrow #-}
@@ -347,6 +358,8 @@ refineThrow = refine .> either MonadThrow.throwM pure
 -- | Constructs a 'Refined' value at run-time,
 --   calling 'Control.Monad.Fail.fail' if the value
 --   does not satisfy the predicate.
+--
+--   @since 0.2.0.0
 refineFail :: (Predicate p x, MonadFail m) => x -> m (Refined p x)
 refineFail = refine .> either (displayException .> fail) pure
 {-# INLINABLE refineFail #-}
@@ -354,6 +367,8 @@ refineFail = refine .> either (displayException .> fail) pure
 -- | Constructs a 'Refined' value at run-time,
 --   calling 'Control.Monad.Error.throwError' if the value
 --   does not satisfy the predicate.
+--
+--   @since 0.2.0.0
 refineError :: (Predicate p x, MonadError RefineException m)
             => x -> m (Refined p x)
 refineError = refine .> either MonadError.throwError pure
@@ -383,6 +398,8 @@ refineError = refine .> either MonadError.throwError pure
 --   zero runtime overhead compared to a plain value construction.
 --
 --   It may be useful to use this function with the `th-lift-instances` package at https://hackage.haskell.org/package/th-lift-instances/
+--
+--   @since 0.1.0.0
 refineTH :: (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
 refineTH =
   let refineByResult :: (Predicate p x)
@@ -397,6 +414,8 @@ refineTH =
 -- | Like 'refineTH', but immediately unrefines the value.
 --   This is useful when some value need only be refined
 --   at compile-time.
+--
+--   @since 0.4.4
 refineTH_ :: forall p x. (Predicate p x, TH.Lift x)
   => x
   -> TH.Q (TH.TExp x)
@@ -413,14 +432,18 @@ refineTH_ =
 --------------------------------------------------------------------------------
 
 -- | Extracts the refined value.
-{-# INLINE unrefine #-}
+--
+--   @since 0.1.0.0
 unrefine :: Refined p x -> x
 unrefine = coerce
+{-# INLINE unrefine #-}
 
 --------------------------------------------------------------------------------
 
 -- | A typeclass which defines a runtime interpretation of
 --   a type-level predicate @p@ for type @x@.
+--
+--   @since 0.1.0.0
 class (Typeable p) => Predicate p x where
   {-# MINIMAL validate #-}
   -- | Check the value @x@ according to the predicate @p@,
@@ -439,11 +462,15 @@ class (Typeable p) => Predicate p x where
   --   implementation detail of the 'refine' function. See
   --   <https://github.com/nikita-volkov/refined/issues/56 this issue>
   --   for more details.
+  --
+  --   @since 0.1.0.0
   validate :: p -> x -> Maybe RefineException
 
 --------------------------------------------------------------------------------
 
 -- | Reify a 'Predicate' by turning it into a value-level predicate.
+--
+--   @since 0.4.2.3
 reifyPredicate :: forall p a. Predicate p a => a -> Bool
 reifyPredicate = refine @p @a .> isRight
 {-# INLINABLE reifyPredicate #-}
@@ -460,9 +487,14 @@ reifyPredicate = refine @p @a .> isRight
 --   >>> isLeft (refine @IdPred @Int undefined)
 --   False
 --
-data IdPred = IdPred
-  deriving (Generic)
+--   @since 0.3.0.0
+data IdPred
+  = IdPred -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.3.0.0
 instance Predicate IdPred x where
   validate _ _ = Nothing
   {-# INLINE validate #-}
@@ -476,9 +508,16 @@ instance Predicate IdPred x where
 --
 --   >>> isLeft (refine @(Not NonEmpty) @[Int] [1,2])
 --   True
-data Not p = Not
-  deriving (Generic, Generic1)
+--
+--   @since 0.1.0.0
+data Not p
+  = Not -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    , Generic1 -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.1.0.0
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
   validate p x = do
     maybe (Just (RefineNotException (typeOf p)))
@@ -494,13 +533,22 @@ instance (Predicate p x, Typeable p) => Predicate (Not p) x where
 --
 --   >>> isRight (refine @(And Positive Odd) @Int 203)
 --   True
-data And l r = And
-  deriving (Generic, Generic1)
+--
+--   @since 0.1.0.0
+data And l r
+  = And -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    , Generic1 -- ^ @since 0.3.0.0
+    )
 
 infixr 3 &&
 -- | The conjunction of two predicates.
+--
+--   @since 0.2.0.0
 type (&&) = And
 
+-- | @since 0.1.0.0
 instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
          ) => Predicate (And l r) x where
   validate p x = do
@@ -522,13 +570,22 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --
 --   >>> isRight (refine @(Or (LessThan 3) (GreaterThan 3)) @Int 2)
 --   True
-data Or l r = Or
-  deriving (Generic, Generic1)
+--
+--   @since 0.1.0.0
+data Or l r
+  = Or -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    , Generic1 -- ^ @since 0.3.0.0
+    )
 
 infixr 2 ||
 -- | The disjunction of two predicates.
+--
+--   @since 0.2.0.0
 type (||) = Or
 
+-- | @since 0.2.0.0
 instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
          ) => Predicate (Or l r) x where
   validate p x = do
@@ -541,15 +598,21 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --------------------------------------------------------------------------------
 
 -- | The exclusive disjunction of two predicates.
-
-data Xor l r = Xor
-  deriving (Generic, Generic1)
+--
+--   @since 0.5
+data Xor l r
+  = Xor -- ^ @since 0.5
+  deriving
+    ( Generic -- ^ @since 0.5
+    , Generic1 -- ^ @since 0.5
+    )
 
 -- not provided because it clashes with GHC.TypeLits.^
 -- infixr 8 ^
 -- The exclusive disjunction of two predicates.
 -- type (^) = Xor
 
+-- | @since 0.5
 instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
          ) => Predicate (Xor l r) x where
   validate p x = do
@@ -576,20 +639,26 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 --
 --   >>> isLeft (refine @(SizeLessThan 4) @Text "Hello")
 --   True
-data SizeLessThan (n :: Nat) = SizeLessThan
-  deriving (Generic)
+--
+--   @since 0.2.0.0
+data SizeLessThan (n :: Nat)
+  = SizeLessThan -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
   validate p x = sized p (x, "Foldable") length ((<), "less than")
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((<), "less than")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) BS.ByteString where
   validate p x = sized p (x, "ByteString") BS.length ((<), "less than")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) BL.ByteString where
   validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((<), "less than")
 
@@ -609,21 +678,27 @@ instance (KnownNat n) => Predicate (SizeLessThan n) BL.ByteString where
 --
 --   >>> isRight (refine @(SizeGreaterThan 4) @Text "Hello")
 --   True
-data SizeGreaterThan (n :: Nat) = SizeGreaterThan
-  deriving (Generic)
+--
+--   @since 0.2.0.0
+data SizeGreaterThan (n :: Nat)
+  = SizeGreaterThan -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
   validate p x = sized p (x, "Foldable") length ((>), "greater than")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((>), "greater than")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) BS.ByteString where
   validate p x = sized p (x, "ByteString") BS.length ((>), "greater than")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) BL.ByteString where
   validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((>), "greater than")
 
@@ -643,21 +718,27 @@ instance (KnownNat n) => Predicate (SizeGreaterThan n) BL.ByteString where
 --
 --   >>> isLeft (refine @(SizeEqualTo 35) @Text "four")
 --   True
-data SizeEqualTo (n :: Nat) = SizeEqualTo
-  deriving (Generic)
+--
+--   @since 0.2.0.0
+data SizeEqualTo (n :: Nat)
+  = SizeEqualTo -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
   validate p x = sized p (x, "Foldable") length ((==), "equal to")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
   validate p x = sized p (x, "Text") Text.length ((==), "equal to")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) BS.ByteString where
   validate p x = sized p (x, "ByteString") BS.length ((==), "equal to")
 
--- @since 0.5
+-- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) BL.ByteString where
   validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((==), "equal to")
 
@@ -671,9 +752,15 @@ instance (KnownNat n) => Predicate (SizeEqualTo n) BL.ByteString where
 --
 --   >>> isLeft (refine @Ascending @[Int] [34, 21, 13, 8, 5])
 --   True
-data Ascending = Ascending
-  deriving (Generic)
+--
+--   @since 0.2.0.0
+data Ascending
+  = Ascending -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.2.0.0
 instance (Foldable t, Ord a) => Predicate Ascending (t a) where
   validate p x = do
     if increasing x
@@ -692,9 +779,15 @@ instance (Foldable t, Ord a) => Predicate Ascending (t a) where
 --
 --   >>> isLeft (refine @Descending @[Int] [5, 8, 13, 21, 34])
 --   True
-data Descending = Descending
-  deriving (Generic)
+--
+--   @since 0.2.0.0
+data Descending
+  = Descending -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.2.0.0
 instance (Foldable t, Ord a) => Predicate Descending (t a) where
   validate p x = do
     if decreasing x
@@ -713,9 +806,15 @@ instance (Foldable t, Ord a) => Predicate Descending (t a) where
 --
 --   >>> isLeft (refine @(LessThan 12) @Int 12)
 --   True
-data LessThan (n :: Nat) = LessThan
-  deriving (Generic)
+--
+--   @since 0.1.0.0
+data LessThan (n :: Nat)
+  = LessThan -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
   validate p x = do
     let x' = fromIntegral (natVal p)
@@ -735,9 +834,15 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
 --
 --   >>> isLeft (refine @(GreaterThan 65) @Int 65)
 --   True
-data GreaterThan (n :: Nat) = GreaterThan
-  deriving (Generic)
+--
+--   @since 0.1.0.0
+data GreaterThan (n :: Nat)
+  = GreaterThan -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
   validate p x = do
     let x' = fromIntegral (natVal p)
@@ -760,9 +865,15 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
 --
 --   >>> isLeft (refine @(From 11) @Int 10)
 --   True
-data From (n :: Nat) = From
-  deriving (Generic)
+--
+--   @since 0.1.2
+data From (n :: Nat)
+  = From -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
   validate p x = do
     let x' = fromIntegral (natVal p)
@@ -782,9 +893,15 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
 --
 --   >>> isLeft (refine @(To 17) @Int 23)
 --   True
-data To (n :: Nat) = To
-  deriving (Generic)
+--
+--   @since 0.1.2
+data To (n :: Nat)
+  = To -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
   validate p x = do
     let x' = fromIntegral (natVal p)
@@ -809,9 +926,15 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
 --
 --   >>> isLeft (refine @(FromTo 13 15) @Int 12)
 --   True
-data FromTo (mn :: Nat) (mx :: Nat) = FromTo
-  deriving (Generic)
+--
+--   @since 0.1.2
+data FromTo (mn :: Nat) (mx :: Nat)
+  = FromTo -- ^ @since 0.4.2
+  deriving
+    ( Generic-- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.1.2
 instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
          ) => Predicate (FromTo mn mx) x where
   validate p x = do
@@ -838,9 +961,15 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
 --
 --   >>> isLeft (refine @(EqualTo 6) @Int 5)
 --   True
-data EqualTo (n :: Nat) = EqualTo
-  deriving (Generic)
+--
+--   @since 0.1.0.0
+data EqualTo (n :: Nat)
+  = EqualTo -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.1.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
     let x' = fromIntegral (natVal p)
@@ -860,10 +989,15 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
 --
 --   >>> isLeft (refine @(NotEqualTo 5) @Int 5)
 --   True
+--
+--   @since 0.2.0.0
+data NotEqualTo (n :: Nat)
+  = NotEqualTo -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
-data NotEqualTo (n :: Nat) = NotEqualTo
-  deriving (Generic)
-
+-- | @since 0.2.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do
     let x' = fromIntegral (natVal p)
@@ -884,9 +1018,15 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
 --
 --   >>> isLeft (refine @(NegativeFromTo 4 3) @Int (-5))
 --   True
-data NegativeFromTo (n :: Nat) (m :: Nat) = NegativeFromTo
-  deriving (Generic)
+--
+--   @since 0.4
+data NegativeFromTo (n :: Nat) (m :: Nat)
+  = NegativeFromTo -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.4
 instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m) x where
   validate p x = do
     let n' = natVal (Proxy @n)
@@ -911,9 +1051,15 @@ instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m
 --
 --   >>> isLeft (refine @(DivisibleBy 2) @Int 37)
 --   True
-data DivisibleBy (n :: Nat) = DivisibleBy
-  deriving (Generic)
+--
+--   @since 0.4.2
+data DivisibleBy (n :: Nat)
+  = DivisibleBy -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.4.2
 instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
   validate p x = do
     let x' = fromIntegral (natVal p)
@@ -932,9 +1078,15 @@ instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
 --
 --   >>> isLeft (refine @Odd @Int 32)
 --   True
-data Odd = Odd
-  deriving (Generic)
+--
+--   @since 0.4.2
+data Odd
+  = Odd -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
+-- | @since 0.4.2
 instance (Integral x) => Predicate Odd x where
   validate p x = do
     if odd x
@@ -946,9 +1098,15 @@ instance (Integral x) => Predicate Odd x where
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is IEEE "not-a-number" (NaN).
-data NaN = NaN
-  deriving (Generic)
+--
+--   @since 0.5
+data NaN
+  = NaN -- ^ @since 0.5
+  deriving
+    ( Generic -- ^ @since 0.5
+    )
 
+-- | @since 0.5
 instance (RealFloat x) => Predicate NaN x where
   validate p x = do
     if isNaN x
@@ -960,9 +1118,15 @@ instance (RealFloat x) => Predicate NaN x where
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is IEEE infinity or negative infinity.
-data Infinite = Infinite
-  deriving (Generic)
+--
+--   @since 0.5
+data Infinite
+  = Infinite -- ^ @since 0.5
+  deriving
+    ( Generic -- ^ @since 0.5
+    )
 
+-- | @since 0.5
 instance (RealFloat x) => Predicate Infinite x where
   validate p x = do
     if isInfinite x
@@ -980,9 +1144,15 @@ instance (RealFloat x) => Predicate Infinite x where
 --
 --   >>> isLeft (refine @Even @Int 33)
 --   True
-data Even = Even
-  deriving (Generic)
+--
+--   @since 0.4.2
+data Even
+  = Even -- ^ @since 0.4.2
+  deriving
+    ( Generic -- ^ @since 0.4.2
+    )
 
+-- | @since 0.4.2
 instance (Integral x) => Predicate Even x where
   validate p x = do
     if even x
@@ -994,57 +1164,85 @@ instance (Integral x) => Predicate Even x where
 --------------------------------------------------------------------------------
 
 -- | A 'Predicate' ensuring that the value is greater than zero.
+--
+--   @since 0.1.0.0
 type Positive = GreaterThan 0
 
 -- | A 'Predicate' ensuring that the value is less than or equal to zero.
+--
+--   @since 0.1.2
 type NonPositive = To 0
 
 -- | A 'Predicate' ensuring that the value is less than zero.
+--
+--   @since 0.1.0.0
 type Negative = LessThan 0
 
 -- | A 'Predicate' ensuring that the value is greater than or equal to zero.
+--
+--   @since 0.1.2
 type NonNegative = From 0
 
 -- | An inclusive range of values from zero to one.
+--
+--   @since 0.1.0.0
 type ZeroToOne = FromTo 0 1
 
 -- | A 'Predicate' ensuring that the value is not equal to zero.
+--
+--   @since 0.2.0.0
 type NonZero = NotEqualTo 0
 
 -- | A 'Predicate' ensuring that the type is non-empty.
+--
+--   @since 0.5
 type Empty = SizeEqualTo 0
 
 -- | A 'Predicate' ensuring that the type is non-empty.
+--
+--   @since 0.2.0.0
 type NonEmpty = SizeGreaterThan 0
 
 --------------------------------------------------------------------------------
 
--- |
--- A typeclass containing "safe" conversions between refined predicates
--- where the target is /weaker/ than the source: that is, all values that
--- satisfy the first predicate will be guarunteed to satisy the second.
+-- | A typeclass containing "safe" conversions between refined
+--   predicates where the target is /weaker/ than the source:
+--   that is, all values that satisfy the first predicate will
+--   be guaranteed to satisy the second.
 --
--- Take care: writing an instance declaration for your custom predicates is
--- the same as an assertion that 'weaken' is safe to use:
+--   Take care: writing an instance declaration for your custom
+--   predicates is the same as an assertion that 'weaken' is
+--   safe to use:
 --
--- @
--- instance 'Weaken' Pred1 Pred2
--- @
+--   @
+--   instance 'Weaken' Pred1 Pred2
+--   @
 --
--- For most of the instances, explicit type annotations for the result
--- value's type might be required.
+--   For most of the instances, explicit type annotations for
+--   the result value's type might be required.
+--
+-- @since 0.2.0.0
 class Weaken from to where
   weaken :: Refined from x -> Refined to x
   weaken = coerce
 
+-- | @since 0.2.0.0
 instance (n <= m)         => Weaken (LessThan n)    (LessThan m)
+-- | @since 0.2.0.0
 instance (n <= m)         => Weaken (LessThan n)    (To m)
+-- | @since 0.2.0.0
 instance (n <= m)         => Weaken (To n)          (To m)
+-- | @since 0.2.0.0
 instance (m <= n)         => Weaken (GreaterThan n) (GreaterThan m)
+-- | @since 0.2.0.0
 instance (m <= n)         => Weaken (GreaterThan n) (From m)
+-- | @since 0.2.0.0
 instance (m <= n)         => Weaken (From n)        (From m)
+-- | @since 0.2.0.0
 instance (p <= n, m <= q) => Weaken (FromTo n m)    (FromTo p q)
+-- | @since 0.2.0.0
 instance (p <= n)         => Weaken (FromTo n m)    (From p)
+-- | @since 0.2.0.0
 instance (m <= q)         => Weaken (FromTo n m)    (To q)
 
 -- | This function helps type inference.
@@ -1053,6 +1251,8 @@ instance (m <= q)         => Weaken (FromTo n m)    (To q)
 -- @
 -- instance Weaken (And l r) l
 -- @
+--
+--   @since 0.2.0.0
 andLeft :: Refined (And l r) x -> Refined l x
 andLeft = coerce
 
@@ -1062,6 +1262,8 @@ andLeft = coerce
 -- @
 -- instance Weaken (And l r) r
 -- @
+--
+--   @since 0.2.0.0
 andRight :: Refined (And l r) x -> Refined r x
 andRight = coerce
 
@@ -1071,6 +1273,8 @@ andRight = coerce
 -- @
 -- instance Weaken l (Or l r)
 -- @
+--
+--   @since 0.2.0.0
 leftOr :: Refined l x -> Refined (Or l r) x
 leftOr = coerce
 
@@ -1080,10 +1284,14 @@ leftOr = coerce
 -- @
 -- instance Weaken r (Or l r)
 -- @
+--
+--   @since 0.2.0.0
 rightOr :: Refined r x -> Refined (Or l r) x
 rightOr = coerce
 
 -- | Strengthen a refinement by composing it with another.
+--
+--   @since 0.4.2.2
 strengthen :: forall p p' x. (Predicate p x, Predicate p' x)
   => Refined p x
   -> Either RefineException (Refined (p && p') x)
@@ -1093,14 +1301,20 @@ strengthen r = refine @(p && p') (unrefine r)
 --------------------------------------------------------------------------------
 
 -- | An exception encoding the way in which a 'Predicate' failed.
+--
+--   @since 0.2.0.0
 data RefineException
   = -- | A 'RefineException' for failures involving the 'Not' predicate.
+    --
+    --   @since 0.2.0.0
     RefineNotException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'Not' p@ type.
     }
 
   | -- | A 'RefineException' for failures involving the 'And' predicate.
+    --
+    --   @since 0.2.0.0
     RefineAndException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'And' l r@ type.
@@ -1115,6 +1329,8 @@ data RefineException
     }
 
   | -- | A 'RefineException' for failures involving the 'Or' predicate.
+    --
+    --   @since 0.2.0.0
     RefineOrException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the @'Or' l r@ type.
@@ -1125,12 +1341,16 @@ data RefineException
     }
 
   | -- | A 'RefineException' for failures involving the 'Xor' predicate.
+    --
+    --   @since 0.5
     RefineXorException
     { _RefineException_typeRep   :: !TypeRep
     , _RefineException_children  :: !(Maybe (RefineException, RefineException))
     }
 
   | -- | A 'RefineException' for failures involving all other predicates.
+    --
+    --   @since 0.2.0.0
     RefineOtherException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the predicate that failed.
@@ -1138,15 +1358,21 @@ data RefineException
       -- ^ A custom message to display.
     }
   | -- | A 'RefineException' for failures involving all other predicates with custom exception.
+    --
+    --   @since 0.5
     RefineSomeException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the predicate that failed.
     , _RefineException_Exception :: !SomeException
       -- ^ A custom exception.
     }
-  deriving (Generic)
+  deriving
+    ( Generic -- ^ @since 0.3.0.0
+    )
 
 -- | /Note/: Equivalent to @'displayRefineException'@.
+--
+--   @since 0.2.0.0
 instance Show RefineException where
   show = PP.pretty .> show
 
@@ -1273,18 +1499,24 @@ refineExceptionToTree = go
 --   @
 --
 --   /Note/: Equivalent to @'show' \@'RefineException'@
+--
+--   @since 0.2.0.0
 displayRefineException :: RefineException -> PP.Doc ann
 displayRefineException = refineExceptionToTree .> showTree
 
 -- | Pretty-print a 'RefineException'.
 --
 --   /Note/: Equivalent to 'displayRefineException'.
+--
+--   @since 0.2.0.0
 instance PP.Pretty RefineException where
   pretty = displayRefineException
 
 -- | Encode a 'RefineException' for use with \Control.Exception\.
 --
 --   /Note/: Equivalent to @'displayRefineException'@.
+--
+--   @since 0.2.0.0
 instance Exception RefineException where
   displayException = show
 
@@ -1294,6 +1526,8 @@ instance Exception RefineException where
 --
 --   'throwRefineOtherException' is useful for defining what
 --   behaviour 'validate' should have in the event of a predicate failure.
+--
+--   @since 0.2.0.0
 throwRefineOtherException
   :: TypeRep
   -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
@@ -1308,6 +1542,8 @@ throwRefineOtherException rep
 --   'throwRefineSomeException' is useful for defining what
 --   behaviour 'validate' should have in the event of a predicate failure
 --   with a specific exception.
+--
+--   @since 0.5
 throwRefineSomeException
   :: TypeRep
   -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
@@ -1330,6 +1566,8 @@ throwRefineSomeException rep
 --       then 'Nothing'
 --       else 'success'
 --   @
+--
+--   @since 0.5
 success
   :: Maybe RefineException
 success
