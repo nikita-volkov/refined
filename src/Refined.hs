@@ -1112,6 +1112,7 @@ data RefineException
     }
   deriving (Generic)
 
+-- | /Note/: Equivalent to @'displayRefineException'@.
 instance Show RefineException where
   show = PP.pretty .> show
 
@@ -1203,14 +1204,53 @@ refineExceptionToTree = go
       RefineXorException tr (Just (l, r)) -> NodeXor tr [go l, go r]
 
 -- | Display a 'RefineException' as a @'PP.Doc' ann@
+--
+--   This function can be extremely useful for debugging
+--   @'RefineException's@, especially deeply nested ones.
+--
+--   Consider:
+--
+--   @
+--   myRefinement = refine
+--     \@(And
+--         (Not (LessThan 5))
+--         (Xor
+--           (DivisibleBy 10)
+--           (And
+--             (EqualTo 4)
+--             (EqualTo 3)
+--           )
+--         )
+--      )
+--     \@Int
+--     3
+--   @
+--
+--   This function will show the following tree structure, recursively breaking down
+--   every issue:
+--
+--   @
+--   And (Not (LessThan 5)) (Xor (EqualTo 4) (And (EqualTo 4) (EqualTo 3)))
+--   ├── The predicate (Not (LessThan 5)) does not hold.
+--   └── Xor (DivisibleBy 10) (And (EqualTo 4) (EqualTo 3))
+--       ├── The predicate (DivisibleBy 10) failed with the message: Value is not divisible by 10
+--       └── And (EqualTo 4) (EqualTo 3)
+--           └── The predicate (EqualTo 4) failed with the message: Value does not equal 4
+--   @
+--
+--   /Note/: Equivalent to @'show' \@'RefineException'@
 displayRefineException :: RefineException -> PP.Doc ann
 displayRefineException = refineExceptionToTree .> showTree
 
 -- | Pretty-print a 'RefineException'.
+--
+--   /Note/: Equivalent to 'displayRefineException'.
 instance PP.Pretty RefineException where
   pretty = displayRefineException
 
 -- | Encode a 'RefineException' for use with \Control.Exception\.
+--
+--   /Note/: Equivalent to @'displayRefineException'@.
 instance Exception RefineException where
   displayException = show
 
@@ -1245,7 +1285,7 @@ throwRefineSomeException rep
 
 -- | An implementation of 'validate' that always succeeds.
 --
---   ==== __Examples___
+--   ==== __Examples__
 --
 --   @
 --   data ContainsLetterE = ContainsLetterE
