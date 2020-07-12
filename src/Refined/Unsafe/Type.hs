@@ -53,7 +53,8 @@ import qualified Language.Haskell.TH.Syntax   as TH
 -- | A refinement type, which wraps a value of type @x@.
 --
 --   @since 0.1.0.0
-newtype Refined p x = Refined x
+newtype Refined p x
+  = Refined x -- ^ @since 0.1.0.0
   deriving newtype
     ( Eq -- ^ @since 0.1.0.0
     , Ord -- ^ @since 0.1.0.0
