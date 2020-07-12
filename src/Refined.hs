@@ -170,6 +170,7 @@ import           Control.Monad.Error.Class    (MonadError)
 import qualified Control.Monad.Error.Class    as MonadError
 #if !MIN_VERSION_base(4,13,0)
 import           Control.Monad.Fail           (MonadFail, fail)
+import           Prelude                      hiding (fail)
 #endif
 
 import           GHC.Generics                 (Generic, Generic1)
