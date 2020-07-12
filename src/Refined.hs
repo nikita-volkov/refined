@@ -88,7 +88,6 @@ module Refined
   , Or(..)
   , type (||)
   , Xor(..)
-  , type (^)
 
     -- * Identity predicate
   , IdPred(..)
@@ -543,9 +542,10 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
 data Xor l r = Xor
   deriving (Generic, Generic1)
 
-infixr 8 ^
--- | The exclusive disjunction of two predicates.
-type (^) = Xor
+-- not provided because it clashes with GHC.TypeLits.^
+-- infixr 8 ^
+-- The exclusive disjunction of two predicates.
+-- type (^) = Xor
 
 instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
          ) => Predicate (Xor l r) x where
