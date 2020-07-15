@@ -9,6 +9,9 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - `strengthen` no longer returns an `Either`, since the proof
   that it should always succeed is in its constraints.
 
+### Removed
+- Refined.These module
+
 ## [0.5.1] - 2020-07-14
 ### Changed
 - `refineTH_` is now implemented in terms of `refineTH`
