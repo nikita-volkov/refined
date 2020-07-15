@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
+## [0.6] - TBD
+### Changed
+- `strengthen` no longer returns an `Either`, since the proof
+  that it should always succeed is in its constraints.
+
 ## [0.5.1] - 2020-07-14
 ### Changed
 - `refineTH_` is now implemented in terms of `refineTH`
