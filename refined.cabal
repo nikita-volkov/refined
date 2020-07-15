@@ -3,7 +3,7 @@ cabal-version:
 name:
   refined
 version:
-  0.5.1
+  0.6
 synopsis:
   Refinement types with static and runtime checking
 description:
