@@ -1431,7 +1431,6 @@ showTree = PP.pretty . unlines . showOne "  " "" ""
           <> show tr
           <> ") failed with the exception: "
           <> displayException e
-          <> "."
         ]
       NodeOther tr p ->
         [ leader
@@ -1441,7 +1440,6 @@ showTree = PP.pretty . unlines . showOne "  " "" ""
           <> show tr
           <> ") failed with the message: "
           <> show p
-          <> "."
         ]
       NodeNot tr ->
         [ leader
@@ -1449,7 +1447,7 @@ showTree = PP.pretty . unlines . showOne "  " "" ""
           <> tie
           <> "The predicate ("
           <> show tr
-          <> ") does not hold."
+          <> ") does not hold"
         ]
       NodeOr tr rest -> nodeRep tr : showChildren rest (leader <> extension)
       NodeAnd tr rest -> nodeRep tr : showChildren rest (leader <> extension)
@@ -1460,7 +1458,7 @@ showTree = PP.pretty . unlines . showOne "  " "" ""
           <> tie
           <> "The predicate ("
           <> show tr
-          <> ") does not hold, because both predicates were satisfied."
+          <> ") does not hold, because both predicates were satisfied"
         ]
       NodeXor tr rest -> nodeRep tr : showChildren rest (leader <> extension)
       where
