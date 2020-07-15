@@ -412,8 +412,9 @@ refineTH =
         -> x
         -> Either RefineException (Refined p x)
       refineByResult = const refine
+      showException = refineExceptionToTree .> showTree True
   in fix $ \loop -> refineByResult (loop undefined)
-       .> either (show .> fail) TH.lift
+       .> either (showException .> show .> fail) TH.lift
        .> fmap TH.TExp
 
 -- | Like 'refineTH', but immediately unrefines the value.
@@ -1406,6 +1407,8 @@ data RefineException
 instance Show RefineException where
   show = PP.pretty .> show
 
+-- | A Tree which is a bit easier to pretty-print
+--   TODO: get rid of this
 data ExceptionTree a
   = NodeNone
   | NodeSome !TypeRep SomeException
@@ -1415,9 +1418,26 @@ data ExceptionTree a
   | NodeAnd !TypeRep [ExceptionTree a]
   | NodeXor !TypeRep [ExceptionTree a]
 
-showTree :: ExceptionTree RefineException -> PP.Doc ann
-showTree = PP.pretty . unlines . showOne "  " "" ""
+-- | pretty-print an 'ExceptionTree', contains a hack to
+--   work differently whether or not you are "inGhc", i.e.
+--   inside of refineTH/refineTH_ (because GHC messes with
+--   the indentation)
+showTree :: Bool -> ExceptionTree RefineException -> PP.Doc ann
+showTree inGhc
+  | inGhc = showOne "" "" ""
+      .> mapOnTail (indent 6)
+      .> unlines
+      .> PP.pretty
+  | otherwise = showOne "  " "" "" .> unlines .> PP.pretty
   where
+    mapOnTail :: (a -> a) -> [a] -> [a]
+    mapOnTail f = \case
+      [] -> []
+      (a : as) -> a : map f as
+
+    indent :: Int -> String -> String
+    indent n s = replicate n ' ' ++ s
+
     showOne :: String -> String -> String -> ExceptionTree RefineException -> [String]
     showOne leader tie arm = \case
       NodeNone ->
@@ -1530,7 +1550,7 @@ refineExceptionToTree = go
 --
 --   @since 0.2.0.0
 displayRefineException :: RefineException -> PP.Doc ann
-displayRefineException = refineExceptionToTree .> showTree
+displayRefineException = refineExceptionToTree .> showTree False
 
 -- | Pretty-print a 'RefineException'.
 --
