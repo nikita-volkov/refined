@@ -46,6 +46,7 @@
 {-# LANGUAGE PackageImports             #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -423,15 +424,11 @@ refineTH =
 refineTH_ :: forall p x. (Predicate p x, TH.Lift x)
   => x
   -> TH.Q (TH.TExp x)
-refineTH_ =
-  let refineByResult :: (Predicate p x)
-        => TH.Q (TH.TExp x)
-        -> x
-        -> Either RefineException x
-      refineByResult = const (refine_ @p @x)
-  in fix $ \loop -> refineByResult (loop undefined)
-       .> either (show .> fail) TH.lift
-       .> fmap TH.TExp
+refineTH_ = refineTH @p @x .> fmap unsafeUnrefineTExp
+
+unsafeUnrefineTExp :: TH.TExp (Refined p x) -> TH.TExp x
+unsafeUnrefineTExp (TH.TExp e) = TH.TExp
+  (TH.VarE 'unrefine `TH.AppE` e)
 
 --------------------------------------------------------------------------------
 
