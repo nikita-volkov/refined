@@ -65,7 +65,6 @@ library
     src
   exposed-modules:
     Refined
-    Refined.These
     Refined.Unsafe
       Refined.Unsafe.Type
   default-language:
