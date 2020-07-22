@@ -1629,9 +1629,9 @@ sized p (x, typ) lenF (cmp, cmpDesc) = do
   then Nothing
   else
     let msg =
-          [ "Size of ", typ, " is not ", cmpDesc
+          [ "Size of ", typ, " is not ", cmpDesc, " "
           , PP.pretty x'
-          , "\n  "
+          , ". "
           , "Size is: "
           , PP.pretty sz
           ] |> mconcat

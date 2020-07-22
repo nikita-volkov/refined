@@ -13,6 +13,10 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ### Removed
 - Refined.These module
 
+### Fixed
+- bug in `sized` internal helper that caused formatting issues
+  in sized predicate errors
+
 ## [0.5.1] - 2020-07-14
 ### Changed
 - `refineTH_` is now implemented in terms of `refineTH`
