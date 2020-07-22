@@ -1556,6 +1556,10 @@ instance Exception RefineException where
 --   'throwRefineOtherException' is useful for defining what
 --   behaviour 'validate' should have in the event of a predicate failure.
 --
+--   Typically the first argument passed to this function
+--   will be the result of applying 'typeRep' to the first
+--   argument of 'validate'.
+--
 --   @since 0.2.0.0
 throwRefineOtherException
   :: TypeRep
