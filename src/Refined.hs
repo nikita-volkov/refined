@@ -41,6 +41,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MagicHash                  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE PackageImports             #-}
@@ -181,8 +182,9 @@ import           Control.Monad.Fail           (MonadFail, fail)
 import           Prelude                      hiding (fail)
 #endif
 
+import           GHC.Exts                     (Proxy#, proxy#)
 import           GHC.Generics                 (Generic, Generic1)
-import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
+import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal')
 
 import           Refined.Unsafe.Type          (Refined(Refined))
 
@@ -813,7 +815,7 @@ data LessThan (n :: Nat)
 -- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
   validate p x = do
-    let n = natVal (Proxy @n)
+    let n = nv @n
     let x' = fromIntegral n
     if x < x'
     then Nothing
@@ -842,7 +844,7 @@ data GreaterThan (n :: Nat)
 -- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
   validate p x = do
-    let n = natVal (Proxy @n)
+    let n = nv @n
     let x' = fromIntegral n
     if x > x'
     then Nothing
@@ -874,7 +876,7 @@ data From (n :: Nat)
 -- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
   validate p x = do
-    let n = natVal (Proxy @n)
+    let n = nv @n
     let x' = fromIntegral n
     if x >= x'
     then Nothing
@@ -903,7 +905,7 @@ data To (n :: Nat)
 -- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
   validate p x = do
-    let n = natVal (Proxy @n)
+    let n = nv @n
     let x' = fromIntegral n
     if x <= x'
     then Nothing
@@ -938,8 +940,8 @@ data FromTo (mn :: Nat) (mx :: Nat)
 instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
          ) => Predicate (FromTo mn mx) x where
   validate p x = do
-    let mn' = natVal (Proxy @mn)
-    let mx' = natVal (Proxy @mx)
+    let mn' = nv @mn
+    let mx' = nv @mx
     if x >= fromIntegral mn' && x <= fromIntegral mx'
     then Nothing
     else
@@ -972,7 +974,7 @@ data EqualTo (n :: Nat)
 -- | @since 0.1.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
-    let n = natVal (Proxy @n)
+    let n = nv @n
     let x' = fromIntegral n
     if x == x'
     then Nothing
@@ -1001,7 +1003,7 @@ data NotEqualTo (n :: Nat)
 -- | @since 0.2.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do
-    let n = natVal (Proxy @n)
+    let n = nv @n
     let x' = fromIntegral n
     if x /= x'
     then Nothing
@@ -1031,8 +1033,8 @@ data NegativeFromTo (n :: Nat) (m :: Nat)
 -- | @since 0.4
 instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m) x where
   validate p x = do
-    let n' = natVal (Proxy @n)
-    let m' = natVal (Proxy @m)
+    let n' = nv @n
+    let m' = nv @m
     if x >= fromIntegral (negate n') && x <= fromIntegral m'
     then Nothing
     else
@@ -1064,7 +1066,7 @@ data DivisibleBy (n :: Nat)
 -- | @since 0.4.2
 instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
   validate p x = do
-    let n = natVal (Proxy @n)
+    let n = nv @n
     let x' = fromIntegral n
     if x `mod` x' == 0
     then Nothing
@@ -1623,7 +1625,7 @@ sized :: forall p n a. (Typeable (p n), KnownNat n)
      -- ^ (compare :: Length -> KnownNat -> Bool, comparison string)
   -> Maybe RefineException
 sized p (x, typ) lenF (cmp, cmpDesc) = do
-  let x' = fromIntegral (natVal (Proxy @n))
+  let x' = fromIntegral (nv @n)
   let sz = lenF x
   if cmp sz x'
   then Nothing
@@ -1636,3 +1638,8 @@ sized p (x, typ) lenF (cmp, cmpDesc) = do
           , PP.pretty sz
           ] |> mconcat
     in throwRefineOtherException (typeRep p) msg
+
+-- helper function to make sure natVal calls are
+-- zero runtime overhead
+nv :: forall n. KnownNat n => Integer
+nv = natVal' (proxy# :: Proxy# n)
