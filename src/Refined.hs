@@ -1447,7 +1447,7 @@ showTree inGhc
           <> "The predicate ("
           <> show tr
           <> ") failed with the message: "
-          <> show p
+          <> Text.unpack p
         ]
       NodeNot tr ->
         [ leader
