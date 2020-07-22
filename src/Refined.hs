@@ -330,13 +330,8 @@ typeName = flip showsTypeRep "" . typeRep
 --   Checks the input value at runtime.
 --
 --   @since 0.1.0.0
-refine :: (Predicate p x) => x -> Either RefineException (Refined p x)
-refine x = do
-  let predicateByResult :: Either RefineException (Refined p x) -> p
-      predicateByResult = const undefined
-  fix $ \result -> do
-    maybe (Right (Refined x)) Left
-      (validate (predicateByResult result) x)
+refine :: forall p x. (Predicate p x) => x -> Either RefineException (Refined p x)
+refine x = maybe (Right (Refined x)) Left (validate (Proxy @p) x)
 {-# INLINABLE refine #-}
 
 -- | Like 'refine', but discards the refinement.
@@ -458,15 +453,7 @@ class (Typeable p) => Predicate p x where
   --   such, the 'Maybe' here should be interpreted to mean
   --   the presence or absence of a 'RefineException', and
   --   nothing else.
-  --
-  --   /Note/: An implementation of 'validate' should not
-  --   case on its first argument, @p@. This is due to an
-  --   implementation detail of the 'refine' function. See
-  --   <https://github.com/nikita-volkov/refined/issues/56 this issue>
-  --   for more details.
-  --
-  --   @since 0.1.0.0
-  validate :: p -> x -> Maybe RefineException
+  validate :: Proxy p -> x -> Maybe RefineException
 
 --------------------------------------------------------------------------------
 
@@ -664,18 +651,18 @@ data SizeLessThan (n :: Nat)
 
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((<), "less than")
+  validate _ x = sized (Proxy @n) (x, "Foldable") length ((<), "less than")
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) Text where
-  validate p x = sized p (x, "Text") Text.length ((<), "less than")
+  validate _ x = sized (Proxy @n) (x, "Text") Text.length ((<), "less than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) BS.ByteString where
-  validate p x = sized p (x, "ByteString") BS.length ((<), "less than")
+  validate _ x = sized (Proxy @n) (x, "ByteString") BS.length ((<), "less than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) BL.ByteString where
-  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((<), "less than")
+  validate _ x = sized (Proxy @n) (x, "ByteString") (fromIntegral . BL.length) ((<), "less than")
 
 --------------------------------------------------------------------------------
 
@@ -703,19 +690,19 @@ data SizeGreaterThan (n :: Nat)
 
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((>), "greater than")
+  validate _ x = sized (Proxy @n) (x, "Foldable") length ((>), "greater than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
-  validate p x = sized p (x, "Text") Text.length ((>), "greater than")
+  validate _ x = sized (Proxy @n) (x, "Text") Text.length ((>), "greater than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) BS.ByteString where
-  validate p x = sized p (x, "ByteString") BS.length ((>), "greater than")
+  validate _ x = sized (Proxy @n) (x, "ByteString") BS.length ((>), "greater than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) BL.ByteString where
-  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((>), "greater than")
+  validate _ x = sized (Proxy @n) (x, "ByteString") (fromIntegral . BL.length) ((>), "greater than")
 
 --------------------------------------------------------------------------------
 
@@ -743,19 +730,19 @@ data SizeEqualTo (n :: Nat)
 
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((==), "equal to")
+  validate _ x = sized (Proxy @n) (x, "Foldable") length ((==), "equal to")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
-  validate p x = sized p (x, "Text") Text.length ((==), "equal to")
+  validate _ x = sized (Proxy @n) (x, "Text") Text.length ((==), "equal to")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) BS.ByteString where
-  validate p x = sized p (x, "ByteString") BS.length ((==), "equal to")
+  validate _ x = sized (Proxy @n) (x, "ByteString") BS.length ((==), "equal to")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) BL.ByteString where
-  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((==), "equal to")
+  validate _ x = sized (Proxy @n) (x, "ByteString") (fromIntegral . BL.length) ((==), "equal to")
 
 --------------------------------------------------------------------------------
 
@@ -832,12 +819,13 @@ data LessThan (n :: Nat)
 -- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = natVal (Proxy @n)
+    let x' = fromIntegral n
     if x < x'
     then Nothing
     else throwRefineOtherException
          (typeOf p)
-         ("Value is not less than " <> PP.pretty (natVal p))
+         ("Value is not less than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
 
@@ -860,12 +848,13 @@ data GreaterThan (n :: Nat)
 -- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = natVal (Proxy @n)
+    let x' = fromIntegral n
     if x > x'
     then Nothing
     else throwRefineOtherException
          (typeOf p)
-         ("Value is not greater than " <> PP.pretty (natVal p))
+         ("Value is not greater than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
 
@@ -891,12 +880,13 @@ data From (n :: Nat)
 -- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = natVal (Proxy @n)
+    let x' = fromIntegral n
     if x >= x'
     then Nothing
     else throwRefineOtherException
          (typeOf p)
-         ("Value is less than " <> PP.pretty (natVal p))
+         ("Value is less than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
 
@@ -919,12 +909,13 @@ data To (n :: Nat)
 -- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = natVal (Proxy @n)
+    let x' = fromIntegral n
     if x <= x'
     then Nothing
     else throwRefineOtherException
          (typeOf p)
-         ("Value is greater than " <> PP.pretty (natVal p))
+         ("Value is greater than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
 
@@ -987,12 +978,13 @@ data EqualTo (n :: Nat)
 -- | @since 0.1.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = natVal (Proxy @n)
+    let x' = fromIntegral n
     if x == x'
     then Nothing
     else throwRefineOtherException
          (typeOf p)
-         ("Value does not equal " <> PP.pretty (natVal p))
+         ("Value does not equal " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
 
@@ -1015,12 +1007,13 @@ data NotEqualTo (n :: Nat)
 -- | @since 0.2.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = natVal (Proxy @n)
+    let x' = fromIntegral n
     if x /= x'
     then Nothing
     else throwRefineOtherException
          (typeOf p)
-         ("Value does equal " <> PP.pretty (natVal p))
+         ("Value does equal " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
 
@@ -1077,12 +1070,13 @@ data DivisibleBy (n :: Nat)
 -- | @since 0.4.2
 instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = natVal (Proxy @n)
+    let x' = fromIntegral n
     if x `mod` x' == 0
     then Nothing
     else throwRefineOtherException
          (typeOf p)
-         ("Value is not divisible by " <> PP.pretty (natVal p))
+         ("Value is not divisible by " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
 

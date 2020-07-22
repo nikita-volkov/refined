@@ -8,6 +8,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ### Changed
 - `strengthen` no longer returns an `Either`, since the proof
   that it should always succeed is in its constraints.
+- `validate` now takes a `Proxy` as its first argument.
 
 ### Removed
 - Refined.These module
