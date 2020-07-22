@@ -169,7 +169,7 @@ import           Data.Text                    (Text)
 import qualified Data.Text                    as Text
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Lazy         as BL
-import           Data.Typeable                (TypeRep, Typeable, typeOf)
+import           Data.Typeable                (TypeRep, Typeable, typeRep)
 import           Data.Void                    (Void)
 
 import           Control.Monad.Catch          (MonadThrow, SomeException)
@@ -197,7 +197,7 @@ import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))
 #if HAVE_QUICKCHECK
 import           Test.QuickCheck  (Arbitrary, Gen)
 import qualified Test.QuickCheck  as QC
-import           Data.Typeable    (showsTypeRep, typeRep)
+import           Data.Typeable    (showsTypeRep)
 #endif
 
 import "these-skinny" Data.These                   (These(This,That,These))
@@ -503,7 +503,7 @@ data Not p
 -- | @since 0.1.0.0
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
   validate p x = do
-    maybe (Just (RefineNotException (typeOf p)))
+    maybe (Just (RefineNotException (typeRep p)))
           (const Nothing)
           (validate @p undefined x)
 
@@ -537,7 +537,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
   validate p x = do
     let a = validate @l undefined x
     let b = validate @r undefined x
-    let throw err = Just (RefineAndException (typeOf p) err)
+    let throw err = Just (RefineAndException (typeRep p) err)
     case (a, b) of
       (Just  e, Just e1) -> throw (These e e1)
       (Just  e,       _) -> throw (This e)
@@ -578,7 +578,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
     let left  = validate @l undefined x
     let right = validate @r undefined x
     case (left, right) of
-      (Just l, Just r) -> Just (RefineOrException (typeOf p) l r)
+      (Just l, Just r) -> Just (RefineOrException (typeRep p) l r)
       _                -> Nothing
 
 --------------------------------------------------------------------------------
@@ -615,8 +615,8 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
     let left = validate @l undefined x
     let right = validate @r undefined x
     case (left, right) of
-      (Nothing, Nothing) -> Just (RefineXorException (typeOf p) Nothing)
-      (Just  l, Just  r) -> Just (RefineXorException (typeOf p) (Just (l, r)))
+      (Nothing, Nothing) -> Just (RefineXorException (typeRep p) Nothing)
+      (Just  l, Just  r) -> Just (RefineXorException (typeRep p) (Just (l, r)))
       _ -> Nothing
 
 --------------------------------------------------------------------------------
@@ -645,18 +645,18 @@ data SizeLessThan (n :: Nat)
 
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
-  validate _ x = sized (Proxy @n) (x, "Foldable") length ((<), "less than")
+  validate p x = sized p (x, "Foldable") length ((<), "less than")
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) Text where
-  validate _ x = sized (Proxy @n) (x, "Text") Text.length ((<), "less than")
+  validate p x = sized p (x, "Text") Text.length ((<), "less than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) BS.ByteString where
-  validate _ x = sized (Proxy @n) (x, "ByteString") BS.length ((<), "less than")
+  validate p x = sized p (x, "ByteString") BS.length ((<), "less than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) BL.ByteString where
-  validate _ x = sized (Proxy @n) (x, "ByteString") (fromIntegral . BL.length) ((<), "less than")
+  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((<), "less than")
 
 --------------------------------------------------------------------------------
 
@@ -684,19 +684,19 @@ data SizeGreaterThan (n :: Nat)
 
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
-  validate _ x = sized (Proxy @n) (x, "Foldable") length ((>), "greater than")
+  validate p x = sized p (x, "Foldable") length ((>), "greater than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
-  validate _ x = sized (Proxy @n) (x, "Text") Text.length ((>), "greater than")
+  validate p x = sized p (x, "Text") Text.length ((>), "greater than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) BS.ByteString where
-  validate _ x = sized (Proxy @n) (x, "ByteString") BS.length ((>), "greater than")
+  validate p x = sized p (x, "ByteString") BS.length ((>), "greater than")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) BL.ByteString where
-  validate _ x = sized (Proxy @n) (x, "ByteString") (fromIntegral . BL.length) ((>), "greater than")
+  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((>), "greater than")
 
 --------------------------------------------------------------------------------
 
@@ -724,19 +724,19 @@ data SizeEqualTo (n :: Nat)
 
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
-  validate _ x = sized (Proxy @n) (x, "Foldable") length ((==), "equal to")
+  validate p x = sized p (x, "Foldable") length ((==), "equal to")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
-  validate _ x = sized (Proxy @n) (x, "Text") Text.length ((==), "equal to")
+  validate p x = sized p (x, "Text") Text.length ((==), "equal to")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) BS.ByteString where
-  validate _ x = sized (Proxy @n) (x, "ByteString") BS.length ((==), "equal to")
+  validate p x = sized p (x, "ByteString") BS.length ((==), "equal to")
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) BL.ByteString where
-  validate _ x = sized (Proxy @n) (x, "ByteString") (fromIntegral . BL.length) ((==), "equal to")
+  validate p x = sized p (x, "ByteString") (fromIntegral . BL.length) ((==), "equal to")
 
 --------------------------------------------------------------------------------
 
@@ -762,7 +762,7 @@ instance (Foldable t, Ord a) => Predicate Ascending (t a) where
     if increasing x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Foldable is not in ascending order."
 
 --------------------------------------------------------------------------------
@@ -789,7 +789,7 @@ instance (Foldable t, Ord a) => Predicate Descending (t a) where
     if decreasing x
     then Nothing
     else throwRefineOtherException
-        (typeOf p)
+        (typeRep p)
         "Foldable is not in descending order."
 
 --------------------------------------------------------------------------------
@@ -818,7 +818,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
     if x < x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          ("Value is not less than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
@@ -847,7 +847,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
     if x > x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          ("Value is not greater than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
@@ -879,7 +879,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
     if x >= x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          ("Value is less than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
@@ -908,7 +908,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
     if x <= x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          ("Value is greater than " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
@@ -949,7 +949,7 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
                 , PP.pretty mx'
                 , ")"
                 ] |> mconcat
-      in throwRefineOtherException (typeOf p) msg
+      in throwRefineOtherException (typeRep p) msg
 
 --------------------------------------------------------------------------------
 
@@ -977,7 +977,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
     if x == x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          ("Value does not equal " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
@@ -1006,7 +1006,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
     if x /= x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          ("Value does equal " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
@@ -1042,7 +1042,7 @@ instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m
                 , PP.pretty m'
                 , ")"
                 ] |> mconcat
-      in throwRefineOtherException (typeOf p) msg
+      in throwRefineOtherException (typeRep p) msg
 
 --------------------------------------------------------------------------------
 
@@ -1069,7 +1069,7 @@ instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
     if x `mod` x' == 0
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          ("Value is not divisible by " <> PP.pretty n)
 
 --------------------------------------------------------------------------------
@@ -1095,7 +1095,7 @@ instance (Integral x) => Predicate Odd x where
     if odd x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not odd."
 
 --------------------------------------------------------------------------------
@@ -1121,7 +1121,7 @@ instance (RealFloat x) => Predicate NaN x where
     if isNaN x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not IEEE \"not-a-number\" (NaN)."
 
 --------------------------------------------------------------------------------
@@ -1150,7 +1150,7 @@ instance (RealFloat x) => Predicate Infinite x where
     if isInfinite x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not IEEE infinity or negative infinity."
 
 --------------------------------------------------------------------------------
@@ -1176,7 +1176,7 @@ instance (Integral x) => Predicate Even x where
     if even x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not even."
 
 --------------------------------------------------------------------------------
@@ -1566,7 +1566,7 @@ instance Exception RefineException where
 --   @since 0.2.0.0
 throwRefineOtherException
   :: TypeRep
-  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
+  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeRep'.
   -> PP.Doc Void
   -- ^ A 'PP.Doc' 'Void' encoding a custom error message to be pretty-printed.
   -> Maybe RefineException
@@ -1582,7 +1582,7 @@ throwRefineOtherException rep
 --   @since 0.5
 throwRefineSomeException
   :: TypeRep
-  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
+  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeRep'.
   -> SomeException
   -- ^ A custom exception.
   -> Maybe RefineException
@@ -1612,8 +1612,8 @@ success
 --------------------------------------------------------------------------------
 
 -- | Helper function for sized predicates.
-sized :: (Typeable (p n), KnownNat n)
-  => p n
+sized :: forall p n a. (Typeable (p n), KnownNat n)
+  => Proxy (p n)
      -- ^ predicate
   -> (a, PP.Doc Void)
      -- ^ (value, type)
@@ -1623,7 +1623,7 @@ sized :: (Typeable (p n), KnownNat n)
      -- ^ (compare :: Length -> KnownNat -> Bool, comparison string)
   -> Maybe RefineException
 sized p (x, typ) lenF (cmp, cmpDesc) = do
-  let x' = fromIntegral (natVal p)
+  let x' = fromIntegral (natVal (Proxy @n))
   let sz = lenF x
   if cmp sz x'
   then Nothing
@@ -1635,4 +1635,4 @@ sized p (x, typ) lenF (cmp, cmpDesc) = do
           , "Size is: "
           , PP.pretty sz
           ] |> mconcat
-    in throwRefineOtherException (typeOf p) msg
+    in throwRefineOtherException (typeRep p) msg
