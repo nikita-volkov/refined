@@ -9,3 +9,6 @@ clean:
 
 ghcid:
 	ghcid -c "cabal repl"
+
+sdist:
+	cabal sdist
