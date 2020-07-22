@@ -9,9 +9,11 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - `strengthen` no longer returns an `Either`, since the proof
   that it should always succeed is in its constraints.
 - `validate` now takes a `Proxy` as its first argument.
+- All uses of prettyprinter are now just `Text`
 
 ### Removed
 - Refined.These module
+- Dependency on `prettyprinter`
 
 ### Fixed
 - bug in `sized` internal helper that caused formatting issues

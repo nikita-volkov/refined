@@ -154,9 +154,6 @@ module Refined
   , throwRefineOtherException
   , throwRefineSomeException
   , success
-
-    -- * Re-Exports
-  , PP.pretty
  ) where
 
 --------------------------------------------------------------------------------
@@ -168,10 +165,12 @@ import           Data.Foldable                (foldl')
 import           Data.Proxy                   (Proxy(Proxy))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as Text
+import qualified Data.Text.Lazy               as TextLazy
+import qualified Data.Text.Lazy.Builder       as TextBuilder
+import qualified Data.Text.Lazy.Builder.Int   as TextBuilder
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Lazy         as BL
 import           Data.Typeable                (TypeRep, Typeable, typeRep)
-import           Data.Void                    (Void)
 
 import           Control.Monad.Catch          (MonadThrow, SomeException)
 import qualified Control.Monad.Catch          as MonadThrow
@@ -188,7 +187,6 @@ import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal'
 
 import           Refined.Unsafe.Type          (Refined(Refined))
 
-import qualified Data.Text.Prettyprint.Doc    as PP
 import qualified Language.Haskell.TH.Syntax   as TH
 
 #if HAVE_AESON
@@ -405,9 +403,10 @@ refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refine
 refineTH =
   let showException = refineExceptionToTree
         .> showTree True
-        .> show
         .> fail
-  in refine @p @x .> either showException TH.lift .> fmap TH.TExp
+  in refine @p @x
+     .> either showException TH.lift
+     .> fmap TH.TExp
 -- | Like 'refineTH', but immediately unrefines the value.
 --   This is useful when some value need only be refined
 --   at compile-time.
@@ -821,7 +820,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
     then Nothing
     else throwRefineOtherException
          (typeRep p)
-         ("Value is not less than " <> PP.pretty n)
+         ("Value is not less than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -850,7 +849,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
     then Nothing
     else throwRefineOtherException
          (typeRep p)
-         ("Value is not greater than " <> PP.pretty n)
+         ("Value is not greater than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -882,7 +881,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
     then Nothing
     else throwRefineOtherException
          (typeRep p)
-         ("Value is less than " <> PP.pretty n)
+         ("Value is less than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -911,7 +910,7 @@ instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
     then Nothing
     else throwRefineOtherException
          (typeRep p)
-         ("Value is greater than " <> PP.pretty n)
+         ("Value is greater than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -946,9 +945,9 @@ instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
     then Nothing
     else
       let msg = [ "Value is out of range (minimum: "
-                , PP.pretty mn'
+                , i2text mn'
                 , ", maximum: "
-                , PP.pretty mx'
+                , i2text mx'
                 , ")"
                 ] |> mconcat
       in throwRefineOtherException (typeRep p) msg
@@ -980,7 +979,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
     then Nothing
     else throwRefineOtherException
          (typeRep p)
-         ("Value does not equal " <> PP.pretty n)
+         ("Value does not equal " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -1009,7 +1008,7 @@ instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
     then Nothing
     else throwRefineOtherException
          (typeRep p)
-         ("Value does equal " <> PP.pretty n)
+         ("Value does equal " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -1039,9 +1038,9 @@ instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m
     then Nothing
     else
       let msg = [ "Value is out of range (minimum: "
-                , PP.pretty (negate n')
+                , i2text (negate n')
                 , ", maximum: "
-                , PP.pretty m'
+                , i2text m'
                 , ")"
                 ] |> mconcat
       in throwRefineOtherException (typeRep p) msg
@@ -1072,7 +1071,7 @@ instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
     then Nothing
     else throwRefineOtherException
          (typeRep p)
-         ("Value is not divisible by " <> PP.pretty n)
+         ("Value is not divisible by " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -1375,7 +1374,7 @@ data RefineException
     RefineOtherException
     { _RefineException_typeRep   :: !TypeRep
       -- ^ The 'TypeRep' of the predicate that failed.
-    , _RefineException_message   :: !(PP.Doc Void)
+    , _RefineException_message   :: !Text
       -- ^ A custom message to display.
     }
   | -- | A 'RefineException' for failures involving all other predicates with custom exception.
@@ -1395,14 +1394,14 @@ data RefineException
 --
 --   @since 0.2.0.0
 instance Show RefineException where
-  show = PP.pretty .> show
+  show = displayRefineException
 
 -- | A Tree which is a bit easier to pretty-print
 --   TODO: get rid of this
 data ExceptionTree a
   = NodeNone
   | NodeSome !TypeRep SomeException
-  | NodeOther !TypeRep !(PP.Doc Void)
+  | NodeOther !TypeRep !Text
   | NodeNot !TypeRep
   | NodeOr !TypeRep [ExceptionTree a]
   | NodeAnd !TypeRep [ExceptionTree a]
@@ -1412,13 +1411,12 @@ data ExceptionTree a
 --   work differently whether or not you are "inGhc", i.e.
 --   inside of refineTH/refineTH_ (because GHC messes with
 --   the indentation)
-showTree :: Bool -> ExceptionTree RefineException -> PP.Doc ann
+showTree :: Bool -> ExceptionTree RefineException -> String
 showTree inGhc
   | inGhc = showOne "" "" ""
       .> mapOnTail (indent 6)
       .> unlines
-      .> PP.pretty
-  | otherwise = showOne "  " "" "" .> unlines .> PP.pretty
+  | otherwise = showOne "  " "" "" .> unlines
   where
     mapOnTail :: (a -> a) -> [a] -> [a]
     mapOnTail f = \case
@@ -1449,7 +1447,7 @@ showTree inGhc
           <> "The predicate ("
           <> show tr
           <> ") failed with the message: "
-          <> show p
+          <> Text.unpack p
         ]
       NodeNot tr ->
         [ leader
@@ -1501,7 +1499,7 @@ refineExceptionToTree = go
       RefineXorException tr Nothing -> NodeXor tr []
       RefineXorException tr (Just (l, r)) -> NodeXor tr [go l, go r]
 
--- | Display a 'RefineException' as a @'PP.Doc' ann@
+-- | Display a 'RefineException' as @'String'@
 --
 --   This function can be extremely useful for debugging
 --   @'RefineException's@, especially deeply nested ones.
@@ -1539,16 +1537,8 @@ refineExceptionToTree = go
 --   /Note/: Equivalent to @'show' \@'RefineException'@
 --
 --   @since 0.2.0.0
-displayRefineException :: RefineException -> PP.Doc ann
+displayRefineException :: RefineException -> String
 displayRefineException = refineExceptionToTree .> showTree False
-
--- | Pretty-print a 'RefineException'.
---
---   /Note/: Equivalent to 'displayRefineException'.
---
---   @since 0.2.0.0
-instance PP.Pretty RefineException where
-  pretty = displayRefineException
 
 -- | Encode a 'RefineException' for use with \Control.Exception\.
 --
@@ -1569,7 +1559,7 @@ instance Exception RefineException where
 throwRefineOtherException
   :: TypeRep
   -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeRep'.
-  -> PP.Doc Void
+  -> Text
   -- ^ A 'PP.Doc' 'Void' encoding a custom error message to be pretty-printed.
   -> Maybe RefineException
 throwRefineOtherException rep
@@ -1617,11 +1607,11 @@ success
 sized :: forall p n a. (Typeable (p n), KnownNat n)
   => Proxy (p n)
      -- ^ predicate
-  -> (a, PP.Doc Void)
+  -> (a, Text)
      -- ^ (value, type)
   -> (a -> Int)
      -- ^ length of value
-  -> (Int -> Int -> Bool, PP.Doc Void)
+  -> (Int -> Int -> Bool, Text)
      -- ^ (compare :: Length -> KnownNat -> Bool, comparison string)
   -> Maybe RefineException
 sized p (x, typ) lenF (cmp, cmpDesc) = do
@@ -1632,10 +1622,10 @@ sized p (x, typ) lenF (cmp, cmpDesc) = do
   else
     let msg =
           [ "Size of ", typ, " is not ", cmpDesc, " "
-          , PP.pretty x'
+          , i2text x'
           , ". "
           , "Size is: "
-          , PP.pretty sz
+          , i2text sz
           ] |> mconcat
     in throwRefineOtherException (typeRep p) msg
 
@@ -1643,3 +1633,13 @@ sized p (x, typ) lenF (cmp, cmpDesc) = do
 -- zero runtime overhead
 nv :: forall n. KnownNat n => Integer
 nv = natVal' (proxy# :: Proxy# n)
+
+-- convert an Integral number to Text
+--
+-- todo: use toLazyTextWith, providing a tiny buffer size
+i2text :: Integral a => a -> Text
+i2text = TextBuilder.decimal
+  .> TextBuilder.toLazyText
+  .> TextLazy.toStrict
+{-# SPECIALISE i2text :: Int -> Text #-}
+{-# SPECIALISE i2text :: Integer -> Text #-}
