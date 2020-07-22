@@ -8,7 +8,6 @@ main = doctest $ srcFiles ++ compFlags
 srcFiles :: [String]
 srcFiles =
   [ "src/Refined.hs"
-  , "src/Refined/These.hs"
   , "src/Refined/Unsafe/Type.hs"
   , "src/Refined/Unsafe.hs"
   ]

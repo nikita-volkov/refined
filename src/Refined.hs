@@ -41,6 +41,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MagicHash                  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE PackageImports             #-}
@@ -153,9 +154,6 @@ module Refined
   , throwRefineOtherException
   , throwRefineSomeException
   , success
-
-    -- * Re-Exports
-  , PP.pretty
  ) where
 
 --------------------------------------------------------------------------------
@@ -164,14 +162,15 @@ import           Control.Exception            (Exception (displayException))
 import           Data.Coerce                  (coerce)
 import           Data.Either                  (isRight)
 import           Data.Foldable                (foldl')
-import           Data.Function                (fix)
 import           Data.Proxy                   (Proxy(Proxy))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as Text
+import qualified Data.Text.Lazy               as TextLazy
+import qualified Data.Text.Lazy.Builder       as TextBuilder
+import qualified Data.Text.Lazy.Builder.Int   as TextBuilder
 import qualified Data.ByteString              as BS
 import qualified Data.ByteString.Lazy         as BL
-import           Data.Typeable                (TypeRep, Typeable, typeOf)
-import           Data.Void                    (Void)
+import           Data.Typeable                (TypeRep, Typeable, typeRep)
 
 import           Control.Monad.Catch          (MonadThrow, SomeException)
 import qualified Control.Monad.Catch          as MonadThrow
@@ -182,12 +181,12 @@ import           Control.Monad.Fail           (MonadFail, fail)
 import           Prelude                      hiding (fail)
 #endif
 
+import           GHC.Exts                     (Proxy#, proxy#)
 import           GHC.Generics                 (Generic, Generic1)
-import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal)
+import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal')
 
 import           Refined.Unsafe.Type          (Refined(Refined))
 
-import qualified Data.Text.Prettyprint.Doc    as PP
 import qualified Language.Haskell.TH.Syntax   as TH
 
 #if HAVE_AESON
@@ -198,7 +197,7 @@ import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))
 #if HAVE_QUICKCHECK
 import           Test.QuickCheck  (Arbitrary, Gen)
 import qualified Test.QuickCheck  as QC
-import           Data.Typeable    (showsTypeRep, typeRep)
+import           Data.Typeable    (showsTypeRep)
 #endif
 
 import "these-skinny" Data.These                   (These(This,That,These))
@@ -330,13 +329,8 @@ typeName = flip showsTypeRep "" . typeRep
 --   Checks the input value at runtime.
 --
 --   @since 0.1.0.0
-refine :: (Predicate p x) => x -> Either RefineException (Refined p x)
-refine x = do
-  let predicateByResult :: Either RefineException (Refined p x) -> p
-      predicateByResult = const undefined
-  fix $ \result -> do
-    maybe (Right (Refined x)) Left
-      (validate (predicateByResult result) x)
+refine :: forall p x. (Predicate p x) => x -> Either RefineException (Refined p x)
+refine x = maybe (Right (Refined x)) Left (validate (Proxy @p) x)
 {-# INLINABLE refine #-}
 
 -- | Like 'refine', but discards the refinement.
@@ -405,18 +399,14 @@ refineError = refine .> either MonadError.throwError pure
 --   <https://hackage.haskell.org/package/th-lift-instances/ th-lift-instances package>.
 --
 --   @since 0.1.0.0
-refineTH :: (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
+refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
 refineTH =
-  let refineByResult :: (Predicate p x)
-        => TH.Q (TH.TExp (Refined p x))
-        -> x
-        -> Either RefineException (Refined p x)
-      refineByResult = const refine
-      showException = refineExceptionToTree .> showTree True
-  in fix $ \loop -> refineByResult (loop undefined)
-       .> either (showException .> show .> fail) TH.lift
-       .> fmap TH.TExp
-
+  let showException = refineExceptionToTree
+        .> showTree True
+        .> fail
+  in refine @p @x
+     .> either showException TH.lift
+     .> fmap TH.TExp
 -- | Like 'refineTH', but immediately unrefines the value.
 --   This is useful when some value need only be refined
 --   at compile-time.
@@ -458,15 +448,7 @@ class (Typeable p) => Predicate p x where
   --   such, the 'Maybe' here should be interpreted to mean
   --   the presence or absence of a 'RefineException', and
   --   nothing else.
-  --
-  --   /Note/: An implementation of 'validate' should not
-  --   case on its first argument, @p@. This is due to an
-  --   implementation detail of the 'refine' function. See
-  --   <https://github.com/nikita-volkov/refined/issues/56 this issue>
-  --   for more details.
-  --
-  --   @since 0.1.0.0
-  validate :: p -> x -> Maybe RefineException
+  validate :: Proxy p -> x -> Maybe RefineException
 
 --------------------------------------------------------------------------------
 
@@ -522,7 +504,7 @@ data Not p
 -- | @since 0.1.0.0
 instance (Predicate p x, Typeable p) => Predicate (Not p) x where
   validate p x = do
-    maybe (Just (RefineNotException (typeOf p)))
+    maybe (Just (RefineNotException (typeRep p)))
           (const Nothing)
           (validate @p undefined x)
 
@@ -556,7 +538,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
   validate p x = do
     let a = validate @l undefined x
     let b = validate @r undefined x
-    let throw err = Just (RefineAndException (typeOf p) err)
+    let throw err = Just (RefineAndException (typeRep p) err)
     case (a, b) of
       (Just  e, Just e1) -> throw (These e e1)
       (Just  e,       _) -> throw (This e)
@@ -597,7 +579,7 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
     let left  = validate @l undefined x
     let right = validate @r undefined x
     case (left, right) of
-      (Just l, Just r) -> Just (RefineOrException (typeOf p) l r)
+      (Just l, Just r) -> Just (RefineOrException (typeRep p) l r)
       _                -> Nothing
 
 --------------------------------------------------------------------------------
@@ -634,8 +616,8 @@ instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
     let left = validate @l undefined x
     let right = validate @r undefined x
     case (left, right) of
-      (Nothing, Nothing) -> Just (RefineXorException (typeOf p) Nothing)
-      (Just  l, Just  r) -> Just (RefineXorException (typeOf p) (Just (l, r)))
+      (Nothing, Nothing) -> Just (RefineXorException (typeRep p) Nothing)
+      (Just  l, Just  r) -> Just (RefineXorException (typeRep p) (Just (l, r)))
       _ -> Nothing
 
 --------------------------------------------------------------------------------
@@ -781,7 +763,7 @@ instance (Foldable t, Ord a) => Predicate Ascending (t a) where
     if increasing x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Foldable is not in ascending order."
 
 --------------------------------------------------------------------------------
@@ -808,7 +790,7 @@ instance (Foldable t, Ord a) => Predicate Descending (t a) where
     if decreasing x
     then Nothing
     else throwRefineOtherException
-        (typeOf p)
+        (typeRep p)
         "Foldable is not in descending order."
 
 --------------------------------------------------------------------------------
@@ -832,12 +814,13 @@ data LessThan (n :: Nat)
 -- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (LessThan n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = nv @n
+    let x' = fromIntegral n
     if x < x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
-         ("Value is not less than " <> PP.pretty (natVal p))
+         (typeRep p)
+         ("Value is not less than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -860,12 +843,13 @@ data GreaterThan (n :: Nat)
 -- | @since 0.1.0.0
 instance (Ord x, Num x, KnownNat n) => Predicate (GreaterThan n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = nv @n
+    let x' = fromIntegral n
     if x > x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
-         ("Value is not greater than " <> PP.pretty (natVal p))
+         (typeRep p)
+         ("Value is not greater than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -891,12 +875,13 @@ data From (n :: Nat)
 -- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (From n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = nv @n
+    let x' = fromIntegral n
     if x >= x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
-         ("Value is less than " <> PP.pretty (natVal p))
+         (typeRep p)
+         ("Value is less than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -919,12 +904,13 @@ data To (n :: Nat)
 -- | @since 0.1.2
 instance (Ord x, Num x, KnownNat n) => Predicate (To n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = nv @n
+    let x' = fromIntegral n
     if x <= x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
-         ("Value is greater than " <> PP.pretty (natVal p))
+         (typeRep p)
+         ("Value is greater than " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -953,18 +939,18 @@ data FromTo (mn :: Nat) (mx :: Nat)
 instance ( Ord x, Num x, KnownNat mn, KnownNat mx, mn <= mx
          ) => Predicate (FromTo mn mx) x where
   validate p x = do
-    let mn' = natVal (Proxy @mn)
-    let mx' = natVal (Proxy @mx)
+    let mn' = nv @mn
+    let mx' = nv @mx
     if x >= fromIntegral mn' && x <= fromIntegral mx'
     then Nothing
     else
       let msg = [ "Value is out of range (minimum: "
-                , PP.pretty mn'
+                , i2text mn'
                 , ", maximum: "
-                , PP.pretty mx'
+                , i2text mx'
                 , ")"
                 ] |> mconcat
-      in throwRefineOtherException (typeOf p) msg
+      in throwRefineOtherException (typeRep p) msg
 
 --------------------------------------------------------------------------------
 
@@ -987,12 +973,13 @@ data EqualTo (n :: Nat)
 -- | @since 0.1.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (EqualTo n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = nv @n
+    let x' = fromIntegral n
     if x == x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
-         ("Value does not equal " <> PP.pretty (natVal p))
+         (typeRep p)
+         ("Value does not equal " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -1015,12 +1002,13 @@ data NotEqualTo (n :: Nat)
 -- | @since 0.2.0.0
 instance (Eq x, Num x, KnownNat n) => Predicate (NotEqualTo n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = nv @n
+    let x' = fromIntegral n
     if x /= x'
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
-         ("Value does equal " <> PP.pretty (natVal p))
+         (typeRep p)
+         ("Value does equal " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -1044,18 +1032,18 @@ data NegativeFromTo (n :: Nat) (m :: Nat)
 -- | @since 0.4
 instance (Ord x, Num x, KnownNat n, KnownNat m) => Predicate (NegativeFromTo n m) x where
   validate p x = do
-    let n' = natVal (Proxy @n)
-    let m' = natVal (Proxy @m)
+    let n' = nv @n
+    let m' = nv @m
     if x >= fromIntegral (negate n') && x <= fromIntegral m'
     then Nothing
     else
       let msg = [ "Value is out of range (minimum: "
-                , PP.pretty (negate n')
+                , i2text (negate n')
                 , ", maximum: "
-                , PP.pretty m'
+                , i2text m'
                 , ")"
                 ] |> mconcat
-      in throwRefineOtherException (typeOf p) msg
+      in throwRefineOtherException (typeRep p) msg
 
 --------------------------------------------------------------------------------
 
@@ -1077,12 +1065,13 @@ data DivisibleBy (n :: Nat)
 -- | @since 0.4.2
 instance (Integral x, KnownNat n) => Predicate (DivisibleBy n) x where
   validate p x = do
-    let x' = fromIntegral (natVal p)
+    let n = nv @n
+    let x' = fromIntegral n
     if x `mod` x' == 0
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
-         ("Value is not divisible by " <> PP.pretty (natVal p))
+         (typeRep p)
+         ("Value is not divisible by " <> i2text n)
 
 --------------------------------------------------------------------------------
 
@@ -1107,7 +1096,7 @@ instance (Integral x) => Predicate Odd x where
     if odd x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not odd."
 
 --------------------------------------------------------------------------------
@@ -1133,7 +1122,7 @@ instance (RealFloat x) => Predicate NaN x where
     if isNaN x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not IEEE \"not-a-number\" (NaN)."
 
 --------------------------------------------------------------------------------
@@ -1162,7 +1151,7 @@ instance (RealFloat x) => Predicate Infinite x where
     if isInfinite x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not IEEE infinity or negative infinity."
 
 --------------------------------------------------------------------------------
@@ -1188,7 +1177,7 @@ instance (Integral x) => Predicate Even x where
     if even x
     then Nothing
     else throwRefineOtherException
-         (typeOf p)
+         (typeRep p)
          "Value is not even."
 
 --------------------------------------------------------------------------------
@@ -1325,8 +1314,8 @@ rightOr = coerce
 --   @since 0.4.2.2
 strengthen :: forall p p' x. (Predicate p x, Predicate p' x)
   => Refined p x
-  -> Either RefineException (Refined (p && p') x)
-strengthen r = refine @(p && p') (unrefine r)
+  -> Refined (p && p') x
+strengthen = coerce
 {-# inlineable strengthen #-}
 
 --------------------------------------------------------------------------------
@@ -1379,15 +1368,6 @@ data RefineException
     , _RefineException_children  :: !(Maybe (RefineException, RefineException))
     }
 
-  | -- | A 'RefineException' for failures involving all other predicates.
-    --
-    --   @since 0.2.0.0
-    RefineOtherException
-    { _RefineException_typeRep   :: !TypeRep
-      -- ^ The 'TypeRep' of the predicate that failed.
-    , _RefineException_message   :: !(PP.Doc Void)
-      -- ^ A custom message to display.
-    }
   | -- | A 'RefineException' for failures involving all other predicates with custom exception.
     --
     --   @since 0.5
@@ -1397,6 +1377,16 @@ data RefineException
     , _RefineException_Exception :: !SomeException
       -- ^ A custom exception.
     }
+
+  | -- | A 'RefineException' for failures involving all other predicates.
+    --
+    --   @since 0.2.0.0
+    RefineOtherException
+    { _RefineException_typeRep   :: !TypeRep
+      -- ^ The 'TypeRep' of the predicate that failed.
+    , _RefineException_message   :: !Text
+      -- ^ A custom message to display.
+    }
   deriving
     ( Generic -- ^ @since 0.3.0.0
     )
@@ -1405,14 +1395,14 @@ data RefineException
 --
 --   @since 0.2.0.0
 instance Show RefineException where
-  show = PP.pretty .> show
+  show = displayRefineException
 
 -- | A Tree which is a bit easier to pretty-print
 --   TODO: get rid of this
 data ExceptionTree a
   = NodeNone
   | NodeSome !TypeRep SomeException
-  | NodeOther !TypeRep !(PP.Doc Void)
+  | NodeOther !TypeRep !Text
   | NodeNot !TypeRep
   | NodeOr !TypeRep [ExceptionTree a]
   | NodeAnd !TypeRep [ExceptionTree a]
@@ -1422,13 +1412,12 @@ data ExceptionTree a
 --   work differently whether or not you are "inGhc", i.e.
 --   inside of refineTH/refineTH_ (because GHC messes with
 --   the indentation)
-showTree :: Bool -> ExceptionTree RefineException -> PP.Doc ann
+showTree :: Bool -> ExceptionTree RefineException -> String
 showTree inGhc
   | inGhc = showOne "" "" ""
       .> mapOnTail (indent 6)
       .> unlines
-      .> PP.pretty
-  | otherwise = showOne "  " "" "" .> unlines .> PP.pretty
+  | otherwise = showOne "  " "" "" .> unlines
   where
     mapOnTail :: (a -> a) -> [a] -> [a]
     mapOnTail f = \case
@@ -1459,7 +1448,7 @@ showTree inGhc
           <> "The predicate ("
           <> show tr
           <> ") failed with the message: "
-          <> show p
+          <> Text.unpack p
         ]
       NodeNot tr ->
         [ leader
@@ -1511,7 +1500,7 @@ refineExceptionToTree = go
       RefineXorException tr Nothing -> NodeXor tr []
       RefineXorException tr (Just (l, r)) -> NodeXor tr [go l, go r]
 
--- | Display a 'RefineException' as a @'PP.Doc' ann@
+-- | Display a 'RefineException' as @'String'@
 --
 --   This function can be extremely useful for debugging
 --   @'RefineException's@, especially deeply nested ones.
@@ -1549,16 +1538,8 @@ refineExceptionToTree = go
 --   /Note/: Equivalent to @'show' \@'RefineException'@
 --
 --   @since 0.2.0.0
-displayRefineException :: RefineException -> PP.Doc ann
+displayRefineException :: RefineException -> String
 displayRefineException = refineExceptionToTree .> showTree False
-
--- | Pretty-print a 'RefineException'.
---
---   /Note/: Equivalent to 'displayRefineException'.
---
---   @since 0.2.0.0
-instance PP.Pretty RefineException where
-  pretty = displayRefineException
 
 -- | Encode a 'RefineException' for use with \Control.Exception\.
 --
@@ -1578,8 +1559,8 @@ instance Exception RefineException where
 --   @since 0.2.0.0
 throwRefineOtherException
   :: TypeRep
-  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
-  -> PP.Doc Void
+  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeRep'.
+  -> Text
   -- ^ A 'PP.Doc' 'Void' encoding a custom error message to be pretty-printed.
   -> Maybe RefineException
 throwRefineOtherException rep
@@ -1594,7 +1575,7 @@ throwRefineOtherException rep
 --   @since 0.5
 throwRefineSomeException
   :: TypeRep
-  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeOf'.
+  -- ^ The 'TypeRep' of the 'Predicate'. This can usually be given by using 'typeRep'.
   -> SomeException
   -- ^ A custom exception.
   -> Maybe RefineException
@@ -1624,27 +1605,42 @@ success
 --------------------------------------------------------------------------------
 
 -- | Helper function for sized predicates.
-sized :: (Typeable (p n), KnownNat n)
-  => p n
+sized :: forall p n a. (Typeable (p n), KnownNat n)
+  => Proxy (p n)
      -- ^ predicate
-  -> (a, PP.Doc Void)
+  -> (a, Text)
      -- ^ (value, type)
   -> (a -> Int)
      -- ^ length of value
-  -> (Int -> Int -> Bool, PP.Doc Void)
+  -> (Int -> Int -> Bool, Text)
      -- ^ (compare :: Length -> KnownNat -> Bool, comparison string)
   -> Maybe RefineException
 sized p (x, typ) lenF (cmp, cmpDesc) = do
-  let x' = fromIntegral (natVal p)
+  let x' = fromIntegral (nv @n)
   let sz = lenF x
   if cmp sz x'
   then Nothing
   else
     let msg =
-          [ "Size of ", typ, " is not ", cmpDesc
-          , PP.pretty x'
-          , "\n  "
+          [ "Size of ", typ, " is not ", cmpDesc, " "
+          , i2text x'
+          , ". "
           , "Size is: "
-          , PP.pretty sz
+          , i2text sz
           ] |> mconcat
-    in throwRefineOtherException (typeOf p) msg
+    in throwRefineOtherException (typeRep p) msg
+
+-- helper function to make sure natVal calls are
+-- zero runtime overhead
+nv :: forall n. KnownNat n => Integer
+nv = natVal' (proxy# :: Proxy# n)
+
+-- convert an Integral number to Text
+--
+-- todo: use toLazyTextWith, providing a tiny buffer size
+i2text :: Integral a => a -> Text
+i2text = TextBuilder.decimal
+  .> TextBuilder.toLazyText
+  .> TextLazy.toStrict
+{-# SPECIALISE i2text :: Int -> Text #-}
+{-# SPECIALISE i2text :: Integer -> Text #-}
