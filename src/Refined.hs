@@ -1368,15 +1368,6 @@ data RefineException
     , _RefineException_children  :: !(Maybe (RefineException, RefineException))
     }
 
-  | -- | A 'RefineException' for failures involving all other predicates.
-    --
-    --   @since 0.2.0.0
-    RefineOtherException
-    { _RefineException_typeRep   :: !TypeRep
-      -- ^ The 'TypeRep' of the predicate that failed.
-    , _RefineException_message   :: !Text
-      -- ^ A custom message to display.
-    }
   | -- | A 'RefineException' for failures involving all other predicates with custom exception.
     --
     --   @since 0.5
@@ -1385,6 +1376,16 @@ data RefineException
       -- ^ The 'TypeRep' of the predicate that failed.
     , _RefineException_Exception :: !SomeException
       -- ^ A custom exception.
+    }
+
+  | -- | A 'RefineException' for failures involving all other predicates.
+    --
+    --   @since 0.2.0.0
+    RefineOtherException
+    { _RefineException_typeRep   :: !TypeRep
+      -- ^ The 'TypeRep' of the predicate that failed.
+    , _RefineException_message   :: !Text
+      -- ^ A custom message to display.
     }
   deriving
     ( Generic -- ^ @since 0.3.0.0
