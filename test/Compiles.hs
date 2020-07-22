@@ -17,6 +17,19 @@ id_   = $$(refineTH_ @IdPred     @Int 3)
 even_ = $$(refineTH_ @(Not Even) @Int 3)
 odd_  = $$(refineTH_ @Odd        @Int 3)
 
+--fails =
+--  $$(refineTH
+--      @( And
+--           NonEmpty
+--           ( Empty
+--           )
+--       )
+--      @[Int]
+--
+--       [1,2,3]
+--    )
+
+
 --foo = $$(refineTH
 --        @( And
 --             Even
