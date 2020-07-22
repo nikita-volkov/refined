@@ -164,7 +164,6 @@ import           Control.Exception            (Exception (displayException))
 import           Data.Coerce                  (coerce)
 import           Data.Either                  (isRight)
 import           Data.Foldable                (foldl')
-import           Data.Function                (fix)
 import           Data.Proxy                   (Proxy(Proxy))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as Text
@@ -400,18 +399,13 @@ refineError = refine .> either MonadError.throwError pure
 --   <https://hackage.haskell.org/package/th-lift-instances/ th-lift-instances package>.
 --
 --   @since 0.1.0.0
-refineTH :: (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
+refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
 refineTH =
-  let refineByResult :: (Predicate p x)
-        => TH.Q (TH.TExp (Refined p x))
-        -> x
-        -> Either RefineException (Refined p x)
-      refineByResult = const refine
-      showException = refineExceptionToTree .> showTree True
-  in fix $ \loop -> refineByResult (loop undefined)
-       .> either (showException .> show .> fail) TH.lift
-       .> fmap TH.TExp
-
+  let showException = refineExceptionToTree
+        .> showTree True
+        .> show
+        .> fail
+  in refine @p @x .> either showException TH.lift .> fmap TH.TExp
 -- | Like 'refineTH', but immediately unrefines the value.
 --   This is useful when some value need only be refined
 --   at compile-time.
