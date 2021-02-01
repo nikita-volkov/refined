@@ -1594,10 +1594,9 @@ throwRefineSomeException rep
 --   data ContainsLetterE = ContainsLetterE
 --
 --   instance Predicate ContainsLetterE 'Text' where
---     validate _ t = do
---       if 'Data.Text.any' ('==' \'e\') t
---       then 'Nothing'
---       else 'success'
+--     validate p t
+--       | 'Data.Text.any' (== \'e\') t = 'success'
+--       | otherwise = Just $ 'throwRefineException' (typeRep p) "Text doesn't contain letter \'e\'".
 --   @
 --
 --   @since 0.5
