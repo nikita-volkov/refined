@@ -4,14 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
+## [0.6.2] - 2021-01-31
+### Changed
+- `strengthen` no longer returns an `Either`, since the proof
+  that it should always succeed is in its constraints.
+- correct `success` documentation 
+
 ## [0.6.1] - 2020-08-02
 ### Changed
 - upper bound on QuickCheck: <2.14 -> <2.15
 
 ## [0.6] - 2020-07-21
 ### Changed
-- `strengthen` no longer returns an `Either`, since the proof
-  that it should always succeed is in its constraints.
 - `validate` now takes a `Proxy` as its first argument.
 - All uses of prettyprinter are now just `Text`
 
