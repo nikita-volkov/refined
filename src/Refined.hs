@@ -1314,8 +1314,8 @@ rightOr = coerce
 --   @since 0.4.2.2
 strengthen :: forall p p' x. (Predicate p x, Predicate p' x)
   => Refined p x
-  -> Refined (p && p') x
-strengthen = coerce
+  -> Either RefineException (Refined (p && p') x)
+strengthen = unrefine .> refine
 {-# inlineable strengthen #-}
 
 --------------------------------------------------------------------------------
