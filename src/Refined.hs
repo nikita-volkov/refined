@@ -160,7 +160,7 @@ module Refined
 
 import           Control.Exception            (Exception (displayException))
 import           Data.Coerce                  (coerce)
-import           Data.Either                  (isRight)
+import           Data.Either                  (isRight, rights)
 import           Data.Foldable                (foldl')
 import           Data.Proxy                   (Proxy(Proxy))
 import           Data.Text                    (Text)
@@ -301,6 +301,7 @@ instance forall p a. (Arbitrary a, Typeable a, Typeable p, Predicate p a) => Arb
               Nothing -> do
                 loop (runs + 1) gen
         | otherwise = error (refinedGenError (Proxy @p) (Proxy @a))
+  shrink = rights . map refine . QC.shrink . unrefine
 
 refinedGenError :: (Typeable p, Typeable a)
   => Proxy p -> Proxy a -> String
