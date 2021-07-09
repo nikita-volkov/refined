@@ -34,6 +34,7 @@ tested-with:
   , GHC == 8.6.5
   , GHC == 8.8.3
   , GHC == 8.10.1
+  , GHC == 9.0.1
 extra-source-files:
     README.md
   , changelog.md
@@ -70,12 +71,12 @@ library
   default-language:
     Haskell2010
   build-depends:
-      base             >= 4.11 && < 4.15
+      base             >= 4.11 && < 4.16
     , bytestring       >= 0.10 && < 0.11
     , deepseq          >= 1.4 && < 1.5
     , exceptions       >= 0.8 && < 0.11
     , mtl              >= 2.2.2 && < 2.3
-    , template-haskell >= 2.9 && < 2.17
+    , template-haskell >= 2.9 && < 2.18
     , text             >= 1.2 && < 1.3
     , these-skinny     >= 0.7.4 && < 0.8
   if flag(aeson)
