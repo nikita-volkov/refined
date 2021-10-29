@@ -74,6 +74,7 @@ module Refined
   , refineThrow
   , refineFail
   , refineError
+  , refineEither
   , refineTH
   , refineTH_
 
@@ -371,6 +372,23 @@ refineError :: (Predicate p x, MonadError RefineException m)
             => x -> m (Refined p x)
 refineError = refine .> either MonadError.throwError pure
 {-# INLINABLE refineError #-}
+
+-- | Like 'refine', but, when the value doesn't satisfy the predicate, returns
+--   a 'Refined' value with the predicate negated, instead of returning
+--   'RefineException'.
+--
+--   >>> isRight (refineEither @Even @Int 42)
+--   True
+--
+--   >>> isLeft (refineEither @Even @Int 43)
+--   True
+--
+refineEither :: forall p x. (Predicate p x) => x -> Either (Refined (Not p) x) (Refined p x)
+refineEither x =
+  case validate (Proxy @p) x of
+    Nothing -> Right $ Refined x
+    Just _  -> Left  $ Refined x
+{-# INLINABLE refineEither #-}
 
 --------------------------------------------------------------------------------
 
