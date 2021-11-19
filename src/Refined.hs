@@ -163,6 +163,7 @@ import           Control.Exception            (Exception (displayException))
 import           Data.Coerce                  (coerce)
 import           Data.Either                  (isRight, rights)
 import           Data.Foldable                (foldl')
+import           Data.Functor.Contravariant   ((>$<))
 import           Data.Proxy                   (Proxy(Proxy))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as Text
@@ -192,7 +193,8 @@ import qualified Language.Haskell.TH.Syntax   as TH
 
 #if HAVE_AESON
 import           Control.Monad    ((<=<))
-import           Data.Aeson       (FromJSON(parseJSON), ToJSON(toJSON))
+import           Data.Aeson       (FromJSON, FromJSONKey, ToJSON, ToJSONKey)
+import qualified Data.Aeson    as Aeson
 #endif
 
 #if HAVE_QUICKCHECK
@@ -280,11 +282,28 @@ instance (Read x, Predicate p x) => Read (Refined p x) where
 #if HAVE_AESON
 -- | @since 0.4
 instance (FromJSON a, Predicate p a) => FromJSON (Refined p a) where
-  parseJSON = refineFail <=< parseJSON
+  parseJSON = refineFail <=< Aeson.parseJSON
+
+instance (FromJSONKey a, Predicate p a) => FromJSONKey (Refined p a) where
+  fromJSONKey = case Aeson.fromJSONKey @a of
+    Aeson.FromJSONKeyCoerce -> Aeson.FromJSONKeyTextParser $ refineFail . coerce
+    Aeson.FromJSONKeyText f -> Aeson.FromJSONKeyTextParser $ refineFail . f
+    Aeson.FromJSONKeyTextParser f -> Aeson.FromJSONKeyTextParser $ refineFail <=< f
+    Aeson.FromJSONKeyValue f -> Aeson.FromJSONKeyValue $ refineFail <=< f
+
+  fromJSONKeyList = case Aeson.fromJSONKeyList @a of
+    Aeson.FromJSONKeyText f -> Aeson.FromJSONKeyTextParser $ traverse refineFail . f
+    Aeson.FromJSONKeyTextParser f -> Aeson.FromJSONKeyTextParser $ traverse refineFail <=< f
+    Aeson.FromJSONKeyValue f -> Aeson.FromJSONKeyValue $ traverse refineFail <=< f
 
 -- | @since 0.4
 instance (ToJSON a, Predicate p a) => ToJSON (Refined p a) where
-  toJSON = toJSON . unrefine
+  toJSON = Aeson.toJSON . unrefine
+
+-- | @since 0.6.3
+instance (ToJSONKey a, Predicate p a) => ToJSONKey (Refined p a) where
+  toJSONKey = unrefine >$< Aeson.toJSONKey
+  toJSONKeyList = map unrefine >$< Aeson.toJSONKeyList
 #endif /* HAVE_AESON */
 
 #if HAVE_QUICKCHECK

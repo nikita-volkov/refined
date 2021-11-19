@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
+## [0.6.3] - Unreleased
+### Added
+- `FromJSONKey` instance for `Refined`
+- `ToJSONKey` instance for `Refined`
+
 ## [0.6.2] - 2021-01-31
 ### Changed
 - `strengthen` no longer returns an `Either`, since the proof
   that it should always succeed is in its constraints.
-- correct `success` documentation 
+- correct `success` documentation
 
 ## [0.6.1] - 2020-08-02
 ### Changed
@@ -36,7 +41,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 ### Added
 - sized Predicate instances for `Text`
 - sized Predicate instances for strict and lazy `ByteString`
-- INLINABLE pragmas on `refine_` `reifyPredicate` 
+- INLINABLE pragmas on `refine_` `reifyPredicate`
 - `NFData` instance for `Refined`
 - RefineSomeException constructor. Enables recovering
   specific validation exceptions.
@@ -47,7 +52,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - @since pragmas to EVERYTHING.
 
 ### Changed
-- lower bound on mtl to 2.2.2 due to use of liftEither. 
+- lower bound on mtl to 2.2.2 due to use of liftEither.
   Thanks to @k0ral for reporting this
 - Generalize sized predicates
 - Allow newer template-haskell (< 0.16 ==> < 0.17)
