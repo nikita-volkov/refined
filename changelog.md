@@ -6,6 +6,7 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 
 ## [0.6.3] - Unreleased
 ### Added
+- `Hashable` instance for `Refined`
 - `FromJSONKey` instance for `Refined`
 - `ToJSONKey` instance for `Refined`
 

@@ -48,6 +48,7 @@ module Refined.Unsafe.Type
   ) where
 
 import           Control.DeepSeq              (NFData)
+import           Data.Hashable (Hashable)
 import qualified Language.Haskell.TH.Syntax   as TH
 
 -- | A refinement type, which wraps a value of type @x@.
@@ -58,6 +59,7 @@ newtype Refined p x
   deriving newtype
     ( Eq -- ^ @since 0.1.0.0
     , Ord -- ^ @since 0.1.0.0
+    , Hashable -- ^ @since 0.6.3
     , NFData -- ^ @since 0.5
     )
   deriving stock
@@ -76,4 +78,3 @@ instance (TH.Lift x) => TH.Lift (Refined p x) where
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped (Refined a) = [||Refined a||]
 #endif
-
