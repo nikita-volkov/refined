@@ -437,7 +437,21 @@ refineEither x =
 --   <https://hackage.haskell.org/package/th-lift-instances/ th-lift-instances package>.
 --
 --   @since 0.1.0.0
-refineTH :: forall p x. (Predicate p x, TH.Lift x) => x -> TH.Q (TH.TExp (Refined p x))
+#if MIN_VERSION_template_haskell(2,17,0)
+refineTH :: forall p x. (Predicate p x, TH.Lift x)
+  => x
+  -> TH.Code TH.Q (Refined p x)
+refineTH =
+  let showException = refineExceptionToTree
+        .> showTree True
+        .> fail
+        .> TH.liftCode
+  in refine @p @x
+     .> either showException TH.liftTyped
+#else
+refineTH :: forall p x. (Predicate p x, TH.Lift x)
+  => x
+  -> TH.Q (TH.TExp (Refined p x))
 refineTH =
   let showException = refineExceptionToTree
         .> showTree True
@@ -445,15 +459,28 @@ refineTH =
   in refine @p @x
      .> either showException TH.lift
      .> fmap TH.TExp
+#endif
+
 -- | Like 'refineTH', but immediately unrefines the value.
 --   This is useful when some value need only be refined
 --   at compile-time.
 --
 --   @since 0.4.4
+#if MIN_VERSION_template_haskell(2,17,0)
+refineTH_ :: forall p x. (Predicate p x, TH.Lift x)
+  => x
+  -> TH.Code TH.Q x
+refineTH_ =
+  refineTH @p @x
+  .> TH.examineCode
+  .> fmap unsafeUnrefineTExp
+  .> TH.liftCode
+#else
 refineTH_ :: forall p x. (Predicate p x, TH.Lift x)
   => x
   -> TH.Q (TH.TExp x)
 refineTH_ = refineTH @p @x .> fmap unsafeUnrefineTExp
+#endif
 
 unsafeUnrefineTExp :: TH.TExp (Refined p x) -> TH.TExp x
 unsafeUnrefineTExp (TH.TExp e) = TH.TExp
@@ -1353,7 +1380,9 @@ rightOr = coerce
 strengthen :: forall p p' x. (Predicate p x, Predicate p' x)
   => Refined p x
   -> Either RefineException (Refined (p && p') x)
-strengthen = unrefine .> refine
+strengthen r = do
+  Refined x <- refine @p' @x (unrefine r)
+  pure (Refined x)
 {-# inlineable strengthen #-}
 
 --------------------------------------------------------------------------------
