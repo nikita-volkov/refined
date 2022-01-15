@@ -9,6 +9,12 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 - `Hashable` instance for `Refined`
 - `FromJSONKey` instance for `Refined`
 - `ToJSONKey` instance for `Refined`
+- `shrink` for `Refined`'s `Arbitrary` instance.
+- `refineEither` function
+
+### Changed
+- improved efficiency of `strengthen`
+- bump multiple dependency upper bounds
 
 ## [0.6.2] - 2021-01-31
 ### Changed
