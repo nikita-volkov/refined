@@ -1277,7 +1277,7 @@ type ZeroToOne = FromTo 0 1
 --   @since 0.2.0.0
 type NonZero = NotEqualTo 0
 
--- | A 'Predicate' ensuring that the type is non-empty.
+-- | A 'Predicate' ensuring that the type is empty.
 --
 --   @since 0.5
 type Empty = SizeEqualTo 0
@@ -1292,7 +1292,7 @@ type NonEmpty = SizeGreaterThan 0
 -- | A typeclass containing "safe" conversions between refined
 --   predicates where the target is /weaker/ than the source:
 --   that is, all values that satisfy the first predicate will
---   be guaranteed to satisy the second.
+--   be guaranteed to satisfy the second.
 --
 --   Take care: writing an instance declaration for your custom
 --   predicates is the same as an assertion that 'weaken' is
