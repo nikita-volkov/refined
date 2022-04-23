@@ -45,6 +45,7 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE PackageImports             #-}
+{-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -567,7 +568,7 @@ data Not p
     )
 
 -- | @since 0.1.0.0
-instance (Predicate p x, Typeable p) => Predicate (Not p) x where
+instance (Predicate (p :: k) x, Typeable p, Typeable k) => Predicate (Not p) x where
   validate p x = do
     maybe (Just (RefineNotException (typeRep p)))
           (const Nothing)
@@ -598,7 +599,7 @@ infixr 3 &&
 type (&&) = And
 
 -- | @since 0.1.0.0
-instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
+instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
          ) => Predicate (And l r) x where
   validate p x = do
     let a = validate @l undefined x
@@ -638,7 +639,7 @@ infixr 2 ||
 type (||) = Or
 
 -- | @since 0.2.0.0
-instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
+instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
          ) => Predicate (Or l r) x where
   validate p x = do
     let left  = validate @l undefined x
@@ -675,7 +676,7 @@ data Xor l r
 -- type (^) = Xor
 
 -- | @since 0.5
-instance ( Predicate l x, Predicate r x, Typeable l, Typeable r
+instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
          ) => Predicate (Xor l r) x where
   validate p x = do
     let left = validate @l undefined x

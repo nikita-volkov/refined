@@ -31,6 +31,7 @@
 {-# LANGUAGE DeriveFoldable             #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE TemplateHaskell            #-}
 
@@ -54,7 +55,7 @@ import qualified Language.Haskell.TH.Syntax   as TH
 -- | A refinement type, which wraps a value of type @x@.
 --
 --   @since 0.1.0.0
-newtype Refined p x
+newtype Refined (p :: k) x
   = Refined x -- ^ @since 0.1.0.0
   deriving newtype
     ( Eq -- ^ @since 0.1.0.0
