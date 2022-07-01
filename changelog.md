@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
 ## Unreleased
-### Changed
+### [0.7] - 2022-07-01
 - make `Refined` predicate type `p` kind polymorphic (`p :: Type` -> `p :: k`)
 
 ## [0.6.3] - 2022-01-14
