@@ -439,9 +439,9 @@ refineEither x =
 --
 --   @since 0.1.0.0
 #if MIN_VERSION_template_haskell(2,17,0)
-refineTH :: forall p x. (Predicate p x, TH.Lift x)
+refineTH :: forall p x m. (Predicate p x, TH.Lift x, TH.Quote m, MonadFail m)
   => x
-  -> TH.Code TH.Q (Refined p x)
+  -> TH.Code m (Refined p x)
 refineTH =
   let showException = refineExceptionToTree
         .> showTree True
@@ -468,9 +468,9 @@ refineTH =
 --
 --   @since 0.4.4
 #if MIN_VERSION_template_haskell(2,17,0)
-refineTH_ :: forall p x. (Predicate p x, TH.Lift x)
+refineTH_ :: forall p x m. (Predicate p x, TH.Lift x, TH.Quote m, MonadFail m)
   => x
-  -> TH.Code TH.Q x
+  -> TH.Code m x
 refineTH_ =
   refineTH @p @x
   .> TH.examineCode

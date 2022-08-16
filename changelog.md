@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
+## Unreleased
+### Changed
+- on GHC >=9, make `refineTH` and `refineTH_` work in any monad
+  `(Quote m, MonadFail m)`.
+
 ## [0.7] - 2022-07-01
 ### Changed
 - make `Refined` predicate type `p` kind polymorphic (`p :: Type` -> `p :: k`)
