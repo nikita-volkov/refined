@@ -136,6 +136,10 @@ module Refined
   , andRight
   , leftOr
   , rightOr
+  , weakenAndLeft
+  , weakenAndRight
+  , weakenOrLeft
+  , weakenOrRight
 
     -- * Strengthening
   , strengthen
@@ -1388,8 +1392,8 @@ rightOr = coerce
 -- @
 --
 --   @since 0.8.1.0
-weakenAndL :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
-weakenAndL = coerce
+weakenAndLeft :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
+weakenAndLeft = coerce
 
 -- | This function helps type inference.
 --   It is equivalent to the following:
@@ -1399,8 +1403,8 @@ weakenAndL = coerce
 -- @
 --
 --   @since 0.8.1.0
-weakenAndR :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
-weakenAndR = coerce
+weakenAndRight :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
+weakenAndRight = coerce
 
 -- | This function helps type inference.
 --   It is equivalent to the following:
@@ -1410,8 +1414,8 @@ weakenAndR = coerce
 -- @
 --
 --   @since 0.8.1.0
-weakenOrL :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
-weakenOrL = coerce
+weakenOrLeft :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
+weakenOrLeft = coerce
 
 -- | This function helps type inference.
 --   It is equivalent to the following:
@@ -1421,8 +1425,8 @@ weakenOrL = coerce
 -- @
 --
 --   @since 0.8.1.0
-weakenOrR :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
-weakenOrR = coerce
+weakenOrRight :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
+weakenOrRight = coerce
 
 -- | Strengthen a refinement by composing it with another.
 --
