@@ -1314,35 +1314,35 @@ class Weaken from to where
   weaken = coerce
 
 -- | @since 0.2.0.0
-instance (n <= m)         => Weaken (LessThan n)    (LessThan m)
+instance (n <= m)         => Weaken (LessThan n)        (LessThan m)
 -- | @since 0.2.0.0
-instance (n <= m)         => Weaken (LessThan n)    (To m)
+instance (n <= m)         => Weaken (LessThan n)        (To m)
 -- | @since 0.2.0.0
-instance (n <= m)         => Weaken (To n)          (To m)
+instance (n <= m)         => Weaken (To n)              (To m)
 -- | @since 0.2.0.0
-instance (m <= n)         => Weaken (GreaterThan n) (GreaterThan m)
+instance (m <= n)         => Weaken (GreaterThan n)     (GreaterThan m)
 -- | @since 0.2.0.0
-instance (m <= n)         => Weaken (GreaterThan n) (From m)
+instance (m <= n)         => Weaken (GreaterThan n)     (From m)
 -- | @since 0.2.0.0
-instance (m <= n)         => Weaken (From n)        (From m)
+instance (m <= n)         => Weaken (From n)            (From m)
 -- | @since 0.2.0.0
-instance (p <= n, m <= q) => Weaken (FromTo n m)    (FromTo p q)
+instance (p <= n, m <= q) => Weaken (FromTo n m)        (FromTo p q)
 -- | @since 0.2.0.0
-instance (p <= n)         => Weaken (FromTo n m)    (From p)
+instance (p <= n)         => Weaken (FromTo n m)        (From p)
 -- | @since 0.2.0.0
-instance (m <= q)         => Weaken (FromTo n m)    (To q)
+instance (m <= q)         => Weaken (FromTo n m)        (To q)
 -- | @since 0.7.1
-instance (n <= m)         => Weaken (SizeLessThan n) (SizeLessThan m)
+instance (n <= m)         => Weaken (SizeLessThan n)    (SizeLessThan m)
 -- | @since 0.7.1
 instance (m <= n)         => Weaken (SizeGreaterThan n) (SizeGreaterThan m)
 -- | @since 0.7.1
-instance Weaken from to   => Weaken (And from x) (And to x)
+instance Weaken from to   => Weaken (And from x)        (And to x)
 -- | @since 0.7.1
-instance Weaken from to   => Weaken (And x from) (And x to)
+instance Weaken from to   => Weaken (And x from)        (And x to)
 -- | @since 0.7.1
-instance Weaken from to   => Weaken (Or from x) (Or to x)
+instance Weaken from to   => Weaken (Or from x)         (Or to x)
 -- | @since 0.7.1
-instance Weaken from to   => Weaken (Or x from) (Or x to)
+instance Weaken from to   => Weaken (Or x from)         (Or x to)
 
 -- | This function helps type inference.
 --   It is equivalent to the following:
