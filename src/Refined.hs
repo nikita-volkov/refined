@@ -1331,6 +1331,18 @@ instance (p <= n, m <= q) => Weaken (FromTo n m)    (FromTo p q)
 instance (p <= n)         => Weaken (FromTo n m)    (From p)
 -- | @since 0.2.0.0
 instance (m <= q)         => Weaken (FromTo n m)    (To q)
+-- | @since 0.8.1
+instance (n <= m)         => Weaken (SizeLessThan n) (SizeLessThan m)
+-- | @since 0.8.1
+instance (m <= n)         => Weaken (SizeGreaterThan n) (SizeGreaterThan m)
+-- | @since 0.8.1
+instance Weaken from to   => Weaken (And from x) (And to x)
+-- | @since 0.8.1
+instance Weaken from to   => Weaken (And x from) (And x to)
+-- | @since 0.8.1
+instance Weaken from to   => Weaken (Or from x) (Or to x)
+-- | @since 0.8.1
+instance Weaken from to   => Weaken (Or x from) (Or x to)
 
 -- | This function helps type inference.
 --   It is equivalent to the following:
