@@ -1335,14 +1335,6 @@ instance (m <= q)         => Weaken (FromTo n m)        (To q)
 instance (n <= m)         => Weaken (SizeLessThan n)    (SizeLessThan m)
 -- | @since 0.7.1
 instance (m <= n)         => Weaken (SizeGreaterThan n) (SizeGreaterThan m)
--- | @since 0.7.1
-instance Weaken from to   => Weaken (And from x)        (And to x)
--- | @since 0.7.1
-instance Weaken from to   => Weaken (And x from)        (And x to)
--- | @since 0.7.1
-instance Weaken from to   => Weaken (Or from x)         (Or to x)
--- | @since 0.7.1
-instance Weaken from to   => Weaken (Or x from)         (Or x to)
 
 -- | This function helps type inference.
 --   It is equivalent to the following:
@@ -1387,6 +1379,50 @@ leftOr = coerce
 --   @since 0.2.0.0
 rightOr :: Refined r x -> Refined (Or l r) x
 rightOr = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (And from x) (And to x)
+-- @
+--
+--   @since 0.7.1.0
+weakenAndL :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
+weakenAndL = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (And x from) (And x to)
+-- @
+--
+--   @since 0.7.1.0
+weakenAndR :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
+weakenAndR = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (Or from x) (Or to x)
+-- @
+--
+--   @since 0.7.1.0
+weakenOrL :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
+weakenOrL = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (Or x from) (Or x to)
+-- @
+--
+--   @since 0.7.1.0
+weakenOrR :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
+weakenOrR = coerce
 
 -- | Strengthen a refinement by composing it with another.
 --
