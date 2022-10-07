@@ -6,7 +6,9 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 
 ## Unreleased
 ### Added
-- `Weaken` instances for `SizeGreaterThan`, `SizeLessThan`, `And`, `Or`
+- `Weaken` instances for `SizeGreaterThan`, `SizeLessThan`.
+- `weakenAndLeft`, `weakenAndRight`, `weakenOrLeft`, `weakenOrRight`
+  type inference helper functions.
 
 ### Changed
 - on GHC >=9, make `refineTH` and `refineTH_` work in any monad
