@@ -6,7 +6,9 @@ and this project adheres to the [Haskell Package Versioning Policy](https://pvp.
 
 ## Unreleased
 ### Added
-- `Weaken` instances for `SizeGreaterThan`, `SizeLessThan`, `And`, `Or`
+- `Weaken` instances for `SizeGreaterThan`, `SizeLessThan`.
+- `weakenAndLeft`, `weakenAndRight`, `weakenOrLeft`, `weakenOrRight`
+  type inference helper functions.
 
 ## [0.8] - 2022-10-09
 ### Changed
