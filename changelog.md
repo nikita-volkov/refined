@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## Unreleased
+## [0.8] - 2022-10-09
 ### Changed
 - on GHC >=9, make `refineTH` and `refineTH_` work in any monad
   `(Quote m, MonadFail m)`.
+- bump `base`: "< 4.17" -> "< 4.18"
+- bump `template-haskell`: "< 2.19" -> "< 2.20"
+- bump `aeson`: "< 2.1" -> "< 2.2"
 
 ## [0.7] - 2022-07-01
 ### Changed
