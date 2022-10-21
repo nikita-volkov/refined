@@ -48,7 +48,7 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TemplateHaskellQuotes      #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -236,7 +236,7 @@ infixl 9 .>
 
 -- | Helper function, stolen from the flow package.
 (.>) :: (a -> b) -> (b -> c) -> a -> c
-f .> g = \x -> g (f x)
+f .> g = g . f
 {-# INLINE (.>) #-}
 
 -- | FIXME: doc
