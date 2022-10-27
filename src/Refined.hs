@@ -48,7 +48,7 @@
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE RoleAnnotations            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TemplateHaskellQuotes      #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -136,6 +136,10 @@ module Refined
   , andRight
   , leftOr
   , rightOr
+  , weakenAndLeft
+  , weakenAndRight
+  , weakenOrLeft
+  , weakenOrRight
 
     -- * Strengthening
   , strengthen
@@ -232,7 +236,7 @@ infixl 9 .>
 
 -- | Helper function, stolen from the flow package.
 (.>) :: (a -> b) -> (b -> c) -> a -> c
-f .> g = \x -> g (f x)
+f .> g = g . f
 {-# INLINE (.>) #-}
 
 -- | FIXME: doc
@@ -1314,23 +1318,27 @@ class Weaken from to where
   weaken = coerce
 
 -- | @since 0.2.0.0
-instance (n <= m)         => Weaken (LessThan n)    (LessThan m)
+instance (n <= m)         => Weaken (LessThan n)        (LessThan m)
 -- | @since 0.2.0.0
-instance (n <= m)         => Weaken (LessThan n)    (To m)
+instance (n <= m)         => Weaken (LessThan n)        (To m)
 -- | @since 0.2.0.0
-instance (n <= m)         => Weaken (To n)          (To m)
+instance (n <= m)         => Weaken (To n)              (To m)
 -- | @since 0.2.0.0
-instance (m <= n)         => Weaken (GreaterThan n) (GreaterThan m)
+instance (m <= n)         => Weaken (GreaterThan n)     (GreaterThan m)
 -- | @since 0.2.0.0
-instance (m <= n)         => Weaken (GreaterThan n) (From m)
+instance (m <= n)         => Weaken (GreaterThan n)     (From m)
 -- | @since 0.2.0.0
-instance (m <= n)         => Weaken (From n)        (From m)
+instance (m <= n)         => Weaken (From n)            (From m)
 -- | @since 0.2.0.0
-instance (p <= n, m <= q) => Weaken (FromTo n m)    (FromTo p q)
+instance (p <= n, m <= q) => Weaken (FromTo n m)        (FromTo p q)
 -- | @since 0.2.0.0
-instance (p <= n)         => Weaken (FromTo n m)    (From p)
+instance (p <= n)         => Weaken (FromTo n m)        (From p)
 -- | @since 0.2.0.0
-instance (m <= q)         => Weaken (FromTo n m)    (To q)
+instance (m <= q)         => Weaken (FromTo n m)        (To q)
+-- | @since 0.8.1
+instance (n <= m)         => Weaken (SizeLessThan n)    (SizeLessThan m)
+-- | @since 0.8.1
+instance (m <= n)         => Weaken (SizeGreaterThan n) (SizeGreaterThan m)
 
 -- | This function helps type inference.
 --   It is equivalent to the following:
@@ -1375,6 +1383,50 @@ leftOr = coerce
 --   @since 0.2.0.0
 rightOr :: Refined r x -> Refined (Or l r) x
 rightOr = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (And from x) (And to x)
+-- @
+--
+--   @since 0.8.1.0
+weakenAndLeft :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
+weakenAndLeft = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (And x from) (And x to)
+-- @
+--
+--   @since 0.8.1.0
+weakenAndRight :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
+weakenAndRight = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (Or from x) (Or to x)
+-- @
+--
+--   @since 0.8.1.0
+weakenOrLeft :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
+weakenOrLeft = coerce
+
+-- | This function helps type inference.
+--   It is equivalent to the following:
+--
+-- @
+-- instance Weaken from to => Weaken (Or x from) (Or x to)
+-- @
+--
+--   @since 0.8.1.0
+weakenOrRight :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
+weakenOrRight = coerce
 
 -- | Strengthen a refinement by composing it with another.
 --

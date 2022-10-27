@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
+## Unreleased
+### Added
+- `Weaken` instances for `SizeGreaterThan`, `SizeLessThan`.
+- `weakenAndLeft`, `weakenAndRight`, `weakenOrLeft`, `weakenOrRight`
+  type inference helper functions.
+
 ## [0.8] - 2022-10-09
 ### Changed
 - on GHC >=9, make `refineTH` and `refineTH_` work in any monad
