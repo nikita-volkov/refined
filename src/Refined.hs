@@ -231,13 +231,21 @@ infixl 9 .>
 
 -- | Helper function, stolen from the flow package.
 (|>) :: a -> (a -> b) -> b
-(|>) = flip ($)
+x |> f = apply x f
 {-# INLINE (|>) #-}
 
 -- | Helper function, stolen from the flow package.
 (.>) :: (a -> b) -> (b -> c) -> a -> c
-f .> g = g . f
+f .> g = compose f g
 {-# INLINE (.>) #-}
+
+-- | Helper function, stolen from the flow package.
+apply :: a -> (a -> b) -> b
+apply x f = f x
+
+-- | Helper function, stolen from the flow package.
+compose :: (a -> b) -> (b -> c) -> (a -> c)
+compose f g x = g (f x)
 
 -- | FIXME: doc
 data Ordered a = Empty | Decreasing a | Increasing a
