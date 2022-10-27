@@ -1,5 +1,4 @@
-cabal-version:
-  2.0
+cabal-version: 2.0
 name:
   refined
 version:
