@@ -83,9 +83,21 @@ module Refined
     -- ** Consumption
   , unrefine
 
+    -- * 'Refined1' type
+  , Refined1
+
+    -- ** Creation
+  , refine1
+
+    -- ** Consumption
+  , unrefine1
+
     -- * 'Predicate'
   , Predicate (validate), validate'
   , reifyPredicate
+
+    -- * 'Predicate1'
+  , Predicate1 (validate1)
 
     -- * Logical predicates
   , Not(..)
@@ -193,7 +205,7 @@ import           GHC.Exts                     (Proxy#, proxy#)
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal')
 
-import           Refined.Unsafe.Type          (Refined(Refined))
+import           Refined.Unsafe.Type          (Refined(Refined), Refined1(Refined1))
 
 import qualified Language.Haskell.TH.Syntax   as TH
 
@@ -425,6 +437,18 @@ refineEither x =
 
 --------------------------------------------------------------------------------
 
+-- | A smart constructor of a 'Refined1' value.
+--   Checks the input value at runtime.
+--
+--   @since 0.1.0.0
+refine1
+    :: forall p f x. Predicate1 p f
+    => f x -> Either RefineException (Refined1 p f x)
+refine1 x = maybe (Right (Refined1 x)) Left (validate1 (Proxy @p) x)
+{-# INLINABLE refine1 #-}
+
+--------------------------------------------------------------------------------
+
 -- | Constructs a 'Refined' value at compile-time using @-XTemplateHaskell@.
 --
 --   For example:
@@ -509,6 +533,11 @@ unrefine :: Refined p x -> x
 unrefine = coerce
 {-# INLINE unrefine #-}
 
+-- | Extracts the refined value.
+unrefine1 :: Refined1 p f x -> f x
+unrefine1 = coerce
+{-# INLINE unrefine1 #-}
+
 --------------------------------------------------------------------------------
 
 -- | A typeclass which defines a runtime interpretation of
@@ -544,6 +573,15 @@ validate'
     .  Predicate (p :: k) x => Proxy p -> x -> Maybe RefineException
 validate' = validate
 {-# INLINE validate' #-}
+
+-- | A typeclass which defines a runtime interpretation of
+--   a type-level predicate @p@ for type @forall a. f a@.
+--
+-- The inner type may not be inspected. If you find yourself needing to add
+-- constraints to it, you want 'Predicate'.
+class (Typeable p, Typeable k) => Predicate1 (p :: k) f where
+  {-# MINIMAL validate1 #-}
+  validate1 :: Proxy p -> f a -> Maybe RefineException
 
 --------------------------------------------------------------------------------
 
@@ -736,9 +774,12 @@ data SizeLessThan (n :: Nat)
     ( Generic -- ^ @since 0.3.0.0
     )
 
--- | @since 0.2.0.0
+instance (Foldable t, KnownNat n) => Predicate1 (SizeLessThan n) t where
+  validate1 p x = sized p (x, "Foldable") length ((<), "less than")
+
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((<), "less than")
+  validate = validate1
+
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((<), "less than")
@@ -775,9 +816,12 @@ data SizeGreaterThan (n :: Nat)
     ( Generic -- ^ @since 0.3.0.0
     )
 
+instance (Foldable t, KnownNat n) => Predicate1 (SizeGreaterThan n) t where
+  validate1 p x = sized p (x, "Foldable") length ((>), "greater than")
+
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((>), "greater than")
+  validate = validate1
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
@@ -815,9 +859,12 @@ data SizeEqualTo (n :: Nat)
     ( Generic -- ^ @since 0.3.0.0
     )
 
+instance (Foldable t, KnownNat n) => Predicate1 (SizeEqualTo n) t where
+  validate1 p x = sized p (x, "Foldable") length ((==), "equal to")
+
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((==), "equal to")
+  validate = validate1
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
