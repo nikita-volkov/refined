@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
-## Unreleased
+## [0.8.1] - 2023-04-05
 ### Added
 - `Weaken` instances for `SizeGreaterThan`, `SizeLessThan`.
 - `weakenAndLeft`, `weakenAndRight`, `weakenOrLeft`, `weakenOrRight`
   type inference helper functions.
+
+### Changed
+- bump `base`: "< 4.18" -> "< 4.19"
+- bump `mtl`: "< 2.3" -> "< 2.4"
+- bump `template-haskell`: "< 2.20" -> "< 2.21"
 
 ## [0.8] - 2022-10-09
 ### Changed
