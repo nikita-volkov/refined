@@ -2,7 +2,7 @@ cabal-version: 2.0
 name:
   refined
 version:
-  0.8
+  0.8.1
 synopsis:
   Refinement types with static and runtime checking
 description:
@@ -36,6 +36,7 @@ tested-with:
   , GHC == 9.0.2
   , GHC == 9.2.4
   , GHC == 9.4.2
+  , GHC == 9.6.1
 extra-source-files:
     README.md
   , changelog.md
@@ -72,13 +73,13 @@ library
   default-language:
     Haskell2010
   build-depends:
-      base             >= 4.11 && < 4.18
+      base             >= 4.11 && < 4.19
     , bytestring       >= 0.10 && < 0.12
     , deepseq          >= 1.4 && < 1.5
     , exceptions       >= 0.8 && < 0.11
     , hashable         >= 1.0 && < 1.5
-    , mtl              >= 2.2.2 && < 2.3
-    , template-haskell >= 2.9 && < 2.20
+    , mtl              >= 2.2.2 && < 2.4
+    , template-haskell >= 2.9 && < 2.21
     , text             >= 1.2 && < 2.1
     , these-skinny     >= 0.7.5 && < 0.8
   if flag(aeson)
