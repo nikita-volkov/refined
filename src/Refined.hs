@@ -84,7 +84,7 @@ module Refined
   , unrefine
 
     -- * 'Predicate'
-  , Predicate (validate)
+  , Predicate (validate), validate'
   , reifyPredicate
 
     -- * Logical predicates
@@ -515,7 +515,7 @@ unrefine = coerce
 --   a type-level predicate @p@ for type @x@.
 --
 --   @since 0.1.0.0
-class (Typeable p) => Predicate p x where
+class (Typeable p, Typeable k) => Predicate (p :: k) x where
   {-# MINIMAL validate #-}
   -- | Check the value @x@ according to the predicate @p@,
   --   producing an error 'RefineException' if the value
@@ -527,7 +527,23 @@ class (Typeable p) => Predicate p x where
   --   such, the 'Maybe' here should be interpreted to mean
   --   the presence or absence of a 'RefineException', and
   --   nothing else.
+  --
+  --   Note that due to GHC's type variable order rules, this function has an
+  --   implicit kind in position 1, which makes TypeApplications awkward. Use
+  --   'validate'' for nicer behaviour.
   validate :: Proxy p -> x -> Maybe RefineException
+
+-- | Check the value @x@ according to the predicate @p@,
+--   producing an error 'RefineException' if the value
+--   does not satisfy.
+--
+-- Same as 'validate' but with more convenient type variable order for a better
+-- TypeApplications experience.
+validate'
+    :: forall {k} p x
+    .  Predicate (p :: k) x => Proxy p -> x -> Maybe RefineException
+validate' = validate
+{-# INLINE validate' #-}
 
 --------------------------------------------------------------------------------
 
@@ -581,11 +597,11 @@ data Not p
     )
 
 -- | @since 0.1.0.0
-instance (Predicate (p :: k) x, Typeable p, Typeable k) => Predicate (Not p) x where
+instance Predicate p x => Predicate (Not p) x where
   validate p x = do
     maybe (Just (RefineNotException (typeRep p)))
           (const Nothing)
-          (validate @p undefined x)
+          (validate' @p undefined x)
 
 --------------------------------------------------------------------------------
 
@@ -612,11 +628,10 @@ infixr 3 &&
 type (&&) = And
 
 -- | @since 0.1.0.0
-instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
-         ) => Predicate (And l r) x where
+instance ( Predicate l x, Predicate r x ) => Predicate (And l r) x where
   validate p x = do
-    let a = validate @l undefined x
-    let b = validate @r undefined x
+    let a = validate' @l undefined x
+    let b = validate' @r undefined x
     let throw err = Just (RefineAndException (typeRep p) err)
     case (a, b) of
       (Just  e, Just e1) -> throw (These e e1)
@@ -652,11 +667,10 @@ infixr 2 ||
 type (||) = Or
 
 -- | @since 0.2.0.0
-instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
-         ) => Predicate (Or l r) x where
+instance ( Predicate l x, Predicate r x ) => Predicate (Or l r) x where
   validate p x = do
-    let left  = validate @l undefined x
-    let right = validate @r undefined x
+    let left  = validate' @l undefined x
+    let right = validate' @r undefined x
     case (left, right) of
       (Just l, Just r) -> Just (RefineOrException (typeRep p) l r)
       _                -> Nothing
@@ -689,11 +703,10 @@ data Xor l r
 -- type (^) = Xor
 
 -- | @since 0.5
-instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
-         ) => Predicate (Xor l r) x where
+instance ( Predicate l x, Predicate r x ) => Predicate (Xor l r) x where
   validate p x = do
-    let left = validate @l undefined x
-    let right = validate @r undefined x
+    let left = validate' @l undefined x
+    let right = validate' @r undefined x
     case (left, right) of
       (Nothing, Nothing) -> Just (RefineXorException (typeRep p) Nothing)
       (Just  l, Just  r) -> Just (RefineXorException (typeRep p) (Just (l, r)))
