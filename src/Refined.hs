@@ -97,7 +97,7 @@ module Refined
   , reifyPredicate
 
     -- * 'Predicate1'
-  , Predicate1 (validate1)
+  , Predicate1 (validate1), validate1'
 
     -- * Logical predicates
   , Not(..)
@@ -581,7 +581,33 @@ validate' = validate
 -- constraints to it, you want 'Predicate'.
 class (Typeable p, Typeable k) => Predicate1 (p :: k) f where
   {-# MINIMAL validate1 #-}
+  -- | Check the value @f a@ according to the predicate @p@,
+  --   producing an error 'RefineException' if the value
+  --   does not satisfy.
+  --
+  --   /Note/: 'validate1' is not intended to be used
+  --   directly; instead, it is intended to provide the minimal
+  --   means necessary for other utilities to be derived. As
+  --   such, the 'Maybe' here should be interpreted to mean
+  --   the presence or absence of a 'RefineException', and
+  --   nothing else.
+  --
+  --   Note that due to GHC's type variable order rules, this function has an
+  --   implicit kind in position 1, which makes TypeApplications awkward. Use
+  --   'validate1'' for nicer behaviour.
   validate1 :: Proxy p -> f a -> Maybe RefineException
+
+-- | Check the value @f a@ according to the predicate @p@,
+--   producing an error 'RefineException' if the value
+--   does not satisfy.
+--
+-- Same as 'validate1' but with more convenient type variable order for a better
+-- TypeApplications experience.
+validate1'
+    :: forall {k} p f a
+    .  Predicate1 (p :: k) f => Proxy p -> f a -> Maybe RefineException
+validate1' = validate1
+{-# INLINE validate1' #-}
 
 --------------------------------------------------------------------------------
 
