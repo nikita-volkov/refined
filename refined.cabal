@@ -83,7 +83,7 @@ library
     , text             >= 1.2 && < 2.1
     , these-skinny     >= 0.7.5 && < 0.8
   if flag(aeson)
-    build-depends: aeson >= 0.9 && < 2.2
+    build-depends: aeson >= 0.9 && < 2.3
     cpp-options: -DHAVE_AESON
   if flag(QuickCheck)
     build-depends: QuickCheck >= 2.1 && < 2.15
