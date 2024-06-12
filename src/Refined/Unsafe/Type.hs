@@ -29,6 +29,7 @@
 
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveFoldable             #-}
+{-# LANGUAGE DeriveTraversable          #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds                  #-}
@@ -46,6 +47,7 @@
 --   imports this one and exports some large coercion.
 module Refined.Unsafe.Type
   ( Refined(Refined)
+  , Refined1(Refined1)
   ) where
 
 import           Control.DeepSeq              (NFData)
@@ -78,4 +80,32 @@ instance (TH.Lift x) => TH.Lift (Refined p x) where
   lift (Refined a) = [|Refined a|]
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped (Refined a) = [||Refined a||]
+#endif
+
+-- | A refinement type, which wraps a value of type @f x@.
+--
+-- The predicate is applied over the functor @f@. Thus, we may safely recover
+-- various 'Functor'y instances, because no matter what you do to the
+-- values inside the functor, the predicate may not be invalidated.
+newtype Refined1 (p :: k) f x
+  = Refined1 (f x)
+  deriving newtype
+    ( Eq
+    , Ord
+    , Hashable
+    , NFData
+    , Functor
+    , Foldable
+    )
+  deriving stock
+    ( Show
+    , Traversable
+    )
+
+type role Refined1 nominal nominal nominal
+
+instance TH.Lift (f a) => TH.Lift (Refined1 p f a) where
+  lift (Refined1 fa) = [|Refined1 fa|]
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped (Refined1 fa) = [||Refined1 fa||]
 #endif

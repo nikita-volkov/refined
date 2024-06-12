@@ -83,9 +83,21 @@ module Refined
     -- ** Consumption
   , unrefine
 
+    -- * 'Refined1' type
+  , Refined1
+
+    -- ** Creation
+  , refine1
+
+    -- ** Consumption
+  , unrefine1
+
     -- * 'Predicate'
-  , Predicate (validate)
+  , Predicate (validate), validate'
   , reifyPredicate
+
+    -- * 'Predicate1'
+  , Predicate1 (validate1), validate1'
 
     -- * Logical predicates
   , Not(..)
@@ -193,7 +205,7 @@ import           GHC.Exts                     (Proxy#, proxy#)
 import           GHC.Generics                 (Generic, Generic1)
 import           GHC.TypeLits                 (type (<=), KnownNat, Nat, natVal')
 
-import           Refined.Unsafe.Type          (Refined(Refined))
+import           Refined.Unsafe.Type          (Refined(Refined), Refined1(Refined1))
 
 import qualified Language.Haskell.TH.Syntax   as TH
 
@@ -425,6 +437,18 @@ refineEither x =
 
 --------------------------------------------------------------------------------
 
+-- | A smart constructor of a 'Refined1' value.
+--   Checks the input value at runtime.
+--
+--   @since 0.1.0.0
+refine1
+    :: forall p f x. Predicate1 p f
+    => f x -> Either RefineException (Refined1 p f x)
+refine1 x = maybe (Right (Refined1 x)) Left (validate1 (Proxy @p) x)
+{-# INLINABLE refine1 #-}
+
+--------------------------------------------------------------------------------
+
 -- | Constructs a 'Refined' value at compile-time using @-XTemplateHaskell@.
 --
 --   For example:
@@ -509,13 +533,18 @@ unrefine :: Refined p x -> x
 unrefine = coerce
 {-# INLINE unrefine #-}
 
+-- | Extracts the refined value.
+unrefine1 :: Refined1 p f x -> f x
+unrefine1 = coerce
+{-# INLINE unrefine1 #-}
+
 --------------------------------------------------------------------------------
 
 -- | A typeclass which defines a runtime interpretation of
 --   a type-level predicate @p@ for type @x@.
 --
 --   @since 0.1.0.0
-class (Typeable p) => Predicate p x where
+class (Typeable p, Typeable k) => Predicate (p :: k) x where
   {-# MINIMAL validate #-}
   -- | Check the value @x@ according to the predicate @p@,
   --   producing an error 'RefineException' if the value
@@ -527,7 +556,58 @@ class (Typeable p) => Predicate p x where
   --   such, the 'Maybe' here should be interpreted to mean
   --   the presence or absence of a 'RefineException', and
   --   nothing else.
+  --
+  --   Note that due to GHC's type variable order rules, this function has an
+  --   implicit kind in position 1, which makes TypeApplications awkward. Use
+  --   'validate'' for nicer behaviour.
   validate :: Proxy p -> x -> Maybe RefineException
+
+-- | Check the value @x@ according to the predicate @p@,
+--   producing an error 'RefineException' if the value
+--   does not satisfy.
+--
+-- Same as 'validate' but with more convenient type variable order for a better
+-- TypeApplications experience.
+validate'
+    :: forall {k} p x
+    .  Predicate (p :: k) x => Proxy p -> x -> Maybe RefineException
+validate' = validate
+{-# INLINE validate' #-}
+
+-- | A typeclass which defines a runtime interpretation of
+--   a type-level predicate @p@ for type @forall a. f a@.
+--
+-- The inner type may not be inspected. If you find yourself needing to add
+-- constraints to it, you want 'Predicate'.
+class (Typeable p, Typeable k) => Predicate1 (p :: k) f where
+  {-# MINIMAL validate1 #-}
+  -- | Check the value @f a@ according to the predicate @p@,
+  --   producing an error 'RefineException' if the value
+  --   does not satisfy.
+  --
+  --   /Note/: 'validate1' is not intended to be used
+  --   directly; instead, it is intended to provide the minimal
+  --   means necessary for other utilities to be derived. As
+  --   such, the 'Maybe' here should be interpreted to mean
+  --   the presence or absence of a 'RefineException', and
+  --   nothing else.
+  --
+  --   Note that due to GHC's type variable order rules, this function has an
+  --   implicit kind in position 1, which makes TypeApplications awkward. Use
+  --   'validate1'' for nicer behaviour.
+  validate1 :: Proxy p -> f a -> Maybe RefineException
+
+-- | Check the value @f a@ according to the predicate @p@,
+--   producing an error 'RefineException' if the value
+--   does not satisfy.
+--
+-- Same as 'validate1' but with more convenient type variable order for a better
+-- TypeApplications experience.
+validate1'
+    :: forall {k} p f a
+    .  Predicate1 (p :: k) f => Proxy p -> f a -> Maybe RefineException
+validate1' = validate1
+{-# INLINE validate1' #-}
 
 --------------------------------------------------------------------------------
 
@@ -581,11 +661,11 @@ data Not p
     )
 
 -- | @since 0.1.0.0
-instance (Predicate (p :: k) x, Typeable p, Typeable k) => Predicate (Not p) x where
+instance Predicate p x => Predicate (Not p) x where
   validate p x = do
     maybe (Just (RefineNotException (typeRep p)))
           (const Nothing)
-          (validate @p undefined x)
+          (validate' @p undefined x)
 
 --------------------------------------------------------------------------------
 
@@ -612,11 +692,10 @@ infixr 3 &&
 type (&&) = And
 
 -- | @since 0.1.0.0
-instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
-         ) => Predicate (And l r) x where
+instance ( Predicate l x, Predicate r x ) => Predicate (And l r) x where
   validate p x = do
-    let a = validate @l undefined x
-    let b = validate @r undefined x
+    let a = validate' @l undefined x
+    let b = validate' @r undefined x
     let throw err = Just (RefineAndException (typeRep p) err)
     case (a, b) of
       (Just  e, Just e1) -> throw (These e e1)
@@ -652,11 +731,10 @@ infixr 2 ||
 type (||) = Or
 
 -- | @since 0.2.0.0
-instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
-         ) => Predicate (Or l r) x where
+instance ( Predicate l x, Predicate r x ) => Predicate (Or l r) x where
   validate p x = do
-    let left  = validate @l undefined x
-    let right = validate @r undefined x
+    let left  = validate' @l undefined x
+    let right = validate' @r undefined x
     case (left, right) of
       (Just l, Just r) -> Just (RefineOrException (typeRep p) l r)
       _                -> Nothing
@@ -689,11 +767,10 @@ data Xor l r
 -- type (^) = Xor
 
 -- | @since 0.5
-instance ( Predicate (l :: k) x, Predicate (r :: k) x, Typeable l, Typeable r, Typeable k
-         ) => Predicate (Xor l r) x where
+instance ( Predicate l x, Predicate r x ) => Predicate (Xor l r) x where
   validate p x = do
-    let left = validate @l undefined x
-    let right = validate @r undefined x
+    let left = validate' @l undefined x
+    let right = validate' @r undefined x
     case (left, right) of
       (Nothing, Nothing) -> Just (RefineXorException (typeRep p) Nothing)
       (Just  l, Just  r) -> Just (RefineXorException (typeRep p) (Just (l, r)))
@@ -723,9 +800,12 @@ data SizeLessThan (n :: Nat)
     ( Generic -- ^ @since 0.3.0.0
     )
 
--- | @since 0.2.0.0
+instance (Foldable t, KnownNat n) => Predicate1 (SizeLessThan n) t where
+  validate1 p x = sized p (x, "Foldable") length ((<), "less than")
+
 instance (Foldable t, KnownNat n) => Predicate (SizeLessThan n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((<), "less than")
+  validate = validate1
+
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeLessThan n) Text where
   validate p x = sized p (x, "Text") Text.length ((<), "less than")
@@ -762,9 +842,12 @@ data SizeGreaterThan (n :: Nat)
     ( Generic -- ^ @since 0.3.0.0
     )
 
+instance (Foldable t, KnownNat n) => Predicate1 (SizeGreaterThan n) t where
+  validate1 p x = sized p (x, "Foldable") length ((>), "greater than")
+
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeGreaterThan n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((>), "greater than")
+  validate = validate1
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeGreaterThan n) Text where
@@ -802,9 +885,12 @@ data SizeEqualTo (n :: Nat)
     ( Generic -- ^ @since 0.3.0.0
     )
 
+instance (Foldable t, KnownNat n) => Predicate1 (SizeEqualTo n) t where
+  validate1 p x = sized p (x, "Foldable") length ((==), "equal to")
+
 -- | @since 0.2.0.0
 instance (Foldable t, KnownNat n) => Predicate (SizeEqualTo n) (t a) where
-  validate p x = sized p (x, "Foldable") length ((==), "equal to")
+  validate = validate1
 
 -- | @since 0.5
 instance (KnownNat n) => Predicate (SizeEqualTo n) Text where
