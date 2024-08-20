@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to the [Haskell Package Versioning Policy](https://pvp.haskell.org/).
 
+## [0.9.0.0] - ????-??-??
+### Changed
+- `weakenOrLeft`, `weakenOrRight`: Changed erroneous type signature.
+
 ## [0.8.1] - 2023-04-05
 ### Added
 - `Weaken` instances for `SizeGreaterThan`, `SizeLessThan`.

@@ -1421,8 +1421,8 @@ weakenAndRight = coerce
 -- instance Weaken from to => Weaken (Or from x) (Or to x)
 -- @
 --
---   @since 0.8.1.0
-weakenOrLeft :: Weaken from to => Refined (And from x) a -> Refined (And to x) a
+--   @since 0.9.0.0
+weakenOrLeft :: Weaken from to => Refined (Or from x) a -> Refined (Or to x) a
 weakenOrLeft = coerce
 
 -- | This function helps type inference.
@@ -1432,8 +1432,8 @@ weakenOrLeft = coerce
 -- instance Weaken from to => Weaken (Or x from) (Or x to)
 -- @
 --
---   @since 0.8.1.0
-weakenOrRight :: Weaken from to => Refined (And x from) a -> Refined (And x to) a
+--   @since 0.9.0.0
+weakenOrRight :: Weaken from to => Refined (Or x from) a -> Refined (Or x to) a
 weakenOrRight = coerce
 
 -- | Strengthen a refinement by composing it with another.
