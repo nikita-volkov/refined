@@ -46,9 +46,11 @@
 module Refined.Unsafe
   ( -- * 'Refined'
     Refined
+  , Refined1
 
     -- ** Creation
   , reallyUnsafeRefine
+  , reallyUnsafeRefine1
   , unsafeRefine
 
     -- ** Coercion
@@ -65,7 +67,7 @@ import           Control.Exception            (displayException)
 import           Data.Coerce                  (coerce)
 
 import           Refined                      (Predicate, refine)
-import           Refined.Unsafe.Type          (Refined(Refined))
+import           Refined.Unsafe.Type          (Refined(Refined), Refined1(Refined1))
 import           Data.Type.Coercion           (Coercion (..))
 #if __GLASGOW_HASKELL__ >= 805
 import           Data.Coerce                  (Coercible)
@@ -93,6 +95,10 @@ unsafeRefine = either (error . displayException) id . refine
 reallyUnsafeRefine :: x -> Refined p x
 reallyUnsafeRefine = coerce
 {-# INLINE reallyUnsafeRefine #-}
+
+reallyUnsafeRefine1 :: f x -> Refined1 p f x
+reallyUnsafeRefine1 = coerce
+{-# INLINE reallyUnsafeRefine1 #-}
 
 -- | A coercion between a type and any refinement of that type.
 --   See "Data.Type.Coercion" for functions manipulating
