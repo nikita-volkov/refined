@@ -323,11 +323,11 @@ instance (FromJSONKey a, Predicate p a) => FromJSONKey (Refined p a) where
     Aeson.FromJSONKeyValue f -> Aeson.FromJSONKeyValue $ traverse refineFail <=< f
 
 -- | @since 0.4
-instance (ToJSON a, Predicate p a) => ToJSON (Refined p a) where
+instance (ToJSON a) => ToJSON (Refined p a) where
   toJSON = Aeson.toJSON . unrefine
 
 -- | @since 0.6.3
-instance (ToJSONKey a, Predicate p a) => ToJSONKey (Refined p a) where
+instance (ToJSONKey a) => ToJSONKey (Refined p a) where
   toJSONKey = unrefine >$< Aeson.toJSONKey
   toJSONKeyList = map unrefine >$< Aeson.toJSONKeyList
 #endif /* HAVE_AESON */
